@@ -94,49 +94,65 @@
     (insert-unconditional! {:fact/type :party/solution
                             :solution ?solution}))
 
+(defn party-solution?
+  [compatibility-map seat-count {:keys [party-size
+                                        party-head
+                                        party-tail
+                                        party-seat-solution]}]
+  (when (= party-size seat-count)
+    (let [compatible-name-set (get compatibility-map party-head)]
+      (when (contains? compatible-name-set party-tail)
+        party-seat-solution))))
+
+(defn party-branch?
+  [{:keys [remaining-name-set
+           compatible-name-set]}]
+  (seq (set/intersection compatible-name-set remaining-name-set)))
+
+(defn party-children
+  [compatibility-map {:keys [remaining-name-set
+                             compatible-name-set
+                             party-head
+                             party-size
+                             party-seat-solution]}]
+  (for [name (set/intersection compatible-name-set remaining-name-set)]
+    {:name name
+     :remaining-name-set (disj remaining-name-set name)
+     :compatible-name-set (get compatibility-map name #{})
+     :party-head (or party-head name)
+     :party-tail name
+     :party-size (inc party-size)
+     :party-seat-solution (conj party-seat-solution name)}))
+
 (defrule party-solution-rule
   [:party/seats-data [{:keys [size]}] (= size ?seat-count)]
   [:party/guest-compatibility-map [{:keys [value]}] (= value ?guest-compatibility)]
   =>
-  (let [solution (some
-                  (fn is-solution
-                    [{:keys [party-size
-                             party-head
-                             party-tail
-                             party-seat-solution]}]
-                    (when (= party-size ?seat-count)
-                      (let [compatible-name-set (get ?guest-compatibility party-head)]
-                        (when (contains? compatible-name-set party-tail)
-                          party-seat-solution))))
-                  (tree-seq (fn is-branch
-                              [{:keys [remaining-name-set
-                                       compatible-name-set]}]
-                              (seq (set/intersection compatible-name-set remaining-name-set)))
-                            (fn get-children
-                              [{:keys [remaining-name-set
-                                       compatible-name-set
-                                       party-head
-                                       party-size
-                                       party-seat-solution]}]
-                              (for [name (set/intersection compatible-name-set remaining-name-set)]
-                                {:name name
-                                 :remaining-name-set (disj remaining-name-set name)
-                                 :compatible-name-set (get ?guest-compatibility name #{})
-                                 :party-head (or party-head name)
-                                 :party-tail name
-                                 :party-size (inc party-size)
-                                 :party-seat-solution (conj party-seat-solution name)}))
-                            {:remaining-name-set (set (keys ?guest-compatibility))
-                             :compatible-name-set (set (keys ?guest-compatibility))
-                             :party-size 0
-                             :party-seat-solution []}))]
+  (let [[name & name-seq] (keys ?guest-compatibility)
+        remaining-name-set (set name-seq)
+        root-node {:name name
+                   :remaining-name-set remaining-name-set
+                   :compatible-name-set (get ?guest-compatibility name)
+                   :party-head name
+                   :party-tail name
+                   :party-size 1
+                   :party-seat-solution [name]}
+        is-solution? (partial party-solution? ?guest-compatibility ?seat-count)
+        get-children (partial party-children ?guest-compatibility)
+        solution (some
+                  is-solution?
+                  (tree-seq party-branch?
+                            get-children
+                            root-node))]
     (when solution
       (insert! {:fact/type :party/solution
                 :solution solution}))))
 
 (time
  (-> (r/mk-session 'clara.miss-manners.manners-test :fact-type-fn :fact/type)
-     (r/insert-all d/manners-8-guest-facts)
+     (r/insert-all d/manners-128-guest-facts)
      (r/fire-rules)
      (r/query party-solution-query)
-     (count)))
+     (first)
+     :?output
+     :solution))
