@@ -1,591 +1,591 @@
 (ns clara.miss-manners.manners-data)
 
 (def manners-8-guest-facts
-  [{:id 1, :sid 1, :fact/type :guest, :name "n1", :sex "m", :hobby "h3"}
-   {:id 2, :sid 1, :fact/type :guest, :name "n1", :sex "m", :hobby "h2"}
-   {:id 3, :sid 1, :fact/type :guest, :name "n2", :sex "m", :hobby "h2"}
-   {:id 4, :sid 1, :fact/type :guest, :name "n2", :sex "m", :hobby "h3"}
-   {:id 5, :sid 1, :fact/type :guest, :name "n3", :sex "m", :hobby "h1"}
-   {:id 6, :sid 1, :fact/type :guest, :name "n3", :sex "m", :hobby "h2"}
-   {:id 7, :sid 1, :fact/type :guest, :name "n3", :sex "m", :hobby "h3"}
-   {:id 8, :sid 1, :fact/type :guest, :name "n4", :sex "f", :hobby "h3"}
-   {:id 9, :sid 1, :fact/type :guest, :name "n4", :sex "f", :hobby "h2"}
-   {:id 10, :sid 1, :fact/type :guest, :name "n5", :sex "f", :hobby "h1"}
-   {:id 11, :sid 1, :fact/type :guest, :name "n5", :sex "f", :hobby "h2"}
-   {:id 12, :sid 1, :fact/type :guest, :name "n5", :sex "f", :hobby "h3"}
-   {:id 13, :sid 1, :fact/type :guest, :name "n6", :sex "f", :hobby "h3"}
-   {:id 14, :sid 1, :fact/type :guest, :name "n6", :sex "f", :hobby "h1"}
-   {:id 15, :sid 1, :fact/type :guest, :name "n6", :sex "f", :hobby "h2"}
-   {:id 16, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h3"}
-   {:id 17, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h2"}
-   {:id 18, :sid 1, :fact/type :guest, :name "n8", :sex "m", :hobby "h3"}
-   {:id 19, :sid 1, :fact/type :guest, :name "n8", :sex "m", :hobby "h1"}
-   {:id 20, :sid 1, :fact/type :last_seat, :seat 8}])
+  [{:fact/type :party/guest-data :name "n1" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n1" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n2" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n2" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n3" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n3" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n3" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n4" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n4" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n5" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n5" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n5" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n6" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n6" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n6" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n8" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n8" :sex "m" :hobby "h1"}
+   {:fact/type :party/seats-data :size 8}])
 
 (def manners-16-guest-facts
-  [{:id 1, :sid 1, :fact/type :guest, :name "n1", :sex "f", :hobby "h3"}
-   {:id 2, :sid 1, :fact/type :guest, :name "n1", :sex "f", :hobby "h1"}
-   {:id 3, :sid 1, :fact/type :guest, :name "n1", :sex "f", :hobby "h2"}
-   {:id 4, :sid 1, :fact/type :guest, :name "n2", :sex "f", :hobby "h3"}
-   {:id 5, :sid 1, :fact/type :guest, :name "n2", :sex "f", :hobby "h2"}
-   {:id 6, :sid 1, :fact/type :guest, :name "n3", :sex "m", :hobby "h1"}
-   {:id 7, :sid 1, :fact/type :guest, :name "n3", :sex "m", :hobby "h3"}
-   {:id 8, :sid 1, :fact/type :guest, :name "n4", :sex "m", :hobby "h2"}
-   {:id 9, :sid 1, :fact/type :guest, :name "n4", :sex "m", :hobby "h1"}
-   {:id 10, :sid 1, :fact/type :guest, :name "n5", :sex "m", :hobby "h2"}
-   {:id 11, :sid 1, :fact/type :guest, :name "n5", :sex "m", :hobby "h3"}
-   {:id 12, :sid 1, :fact/type :guest, :name "n6", :sex "m", :hobby "h2"}
-   {:id 13, :sid 1, :fact/type :guest, :name "n6", :sex "m", :hobby "h1"}
-   {:id 14, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h2"}
-   {:id 15, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h1"}
-   {:id 16, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h3"}
-   {:id 17, :sid 1, :fact/type :guest, :name "n8", :sex "f", :hobby "h3"}
-   {:id 18, :sid 1, :fact/type :guest, :name "n8", :sex "f", :hobby "h2"}
-   {:id 19, :sid 1, :fact/type :guest, :name "n9", :sex "f", :hobby "h1"}
-   {:id 20, :sid 1, :fact/type :guest, :name "n9", :sex "f", :hobby "h3"}
-   {:id 21, :sid 1, :fact/type :guest, :name "n9", :sex "f", :hobby "h2"}
-   {:id 22, :sid 1, :fact/type :guest, :name "n10", :sex "m", :hobby "h2"}
-   {:id 23, :sid 1, :fact/type :guest, :name "n10", :sex "m", :hobby "h3"}
-   {:id 24, :sid 1, :fact/type :guest, :name "n11", :sex "m", :hobby "h3"}
-   {:id 25, :sid 1, :fact/type :guest, :name "n11", :sex "m", :hobby "h2"}
-   {:id 26, :sid 1, :fact/type :guest, :name "n11", :sex "m", :hobby "h1"}
-   {:id 27, :sid 1, :fact/type :guest, :name "n12", :sex "m", :hobby "h3"}
-   {:id 28, :sid 1, :fact/type :guest, :name "n12", :sex "m", :hobby "h1"}
-   {:id 29, :sid 1, :fact/type :guest, :name "n13", :sex "m", :hobby "h2"}
-   {:id 30, :sid 1, :fact/type :guest, :name "n13", :sex "m", :hobby "h3"}
-   {:id 31, :sid 1, :fact/type :guest, :name "n13", :sex "m", :hobby "h1"}
-   {:id 32, :sid 1, :fact/type :guest, :name "n14", :sex "f", :hobby "h3"}
-   {:id 33, :sid 1, :fact/type :guest, :name "n14", :sex "f", :hobby "h1"}
-   {:id 34, :sid 1, :fact/type :guest, :name "n15", :sex "f", :hobby "h3"}
-   {:id 35, :sid 1, :fact/type :guest, :name "n15", :sex "f", :hobby "h1"}
-   {:id 36, :sid 1, :fact/type :guest, :name "n15", :sex "f", :hobby "h2"}
-   {:id 37, :sid 1, :fact/type :guest, :name "n16", :sex "f", :hobby "h3"}
-   {:id 38, :sid 1, :fact/type :guest, :name "n16", :sex "f", :hobby "h2"}
-   {:id 39, :sid 1, :fact/type :guest, :name "n16", :sex "f", :hobby "h1"}
-   {:id 40, :sid 1, :fact/type :last_seat, :seat 16}])
+  [{:fact/type :party/guest-data :name "n1" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n1" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n1" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n2" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n2" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n3" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n3" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n4" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n4" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n5" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n5" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n6" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n6" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n8" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n8" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n9" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n9" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n9" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n10" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n10" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n11" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n11" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n11" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n12" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n12" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n13" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n13" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n13" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n14" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n14" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n15" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n15" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n15" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n16" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n16" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n16" :sex "f" :hobby "h1"}
+   {:fact/type :party/seats-data :size 16}])
 
 (def manners-32-guest-facts
-  [{:id 1, :sid 1, :fact/type :guest, :name "n1", :sex "m", :hobby "h1"}
-   {:id 2, :sid 1, :fact/type :guest, :name "n1", :sex "m", :hobby "h3"}
-   {:id 3, :sid 1, :fact/type :guest, :name "n2", :sex "f", :hobby "h3"}
-   {:id 4, :sid 1, :fact/type :guest, :name "n2", :sex "f", :hobby "h2"}
-   {:id 5, :sid 1, :fact/type :guest, :name "n2", :sex "f", :hobby "h1"}
-   {:id 6, :sid 1, :fact/type :guest, :name "n3", :sex "f", :hobby "h1"}
-   {:id 7, :sid 1, :fact/type :guest, :name "n3", :sex "f", :hobby "h2"}
-   {:id 8, :sid 1, :fact/type :guest, :name "n4", :sex "f", :hobby "h3"}
-   {:id 9, :sid 1, :fact/type :guest, :name "n4", :sex "f", :hobby "h1"}
-   {:id 10, :sid 1, :fact/type :guest, :name "n5", :sex "f", :hobby "h1"}
-   {:id 11, :sid 1, :fact/type :guest, :name "n5", :sex "f", :hobby "h2"}
-   {:id 12, :sid 1, :fact/type :guest, :name "n6", :sex "m", :hobby "h1"}
-   {:id 13, :sid 1, :fact/type :guest, :name "n6", :sex "m", :hobby "h2"}
-   {:id 14, :sid 1, :fact/type :guest, :name "n6", :sex "m", :hobby "h3"}
-   {:id 15, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h2"}
-   {:id 16, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h1"}
-   {:id 17, :sid 1, :fact/type :guest, :name "n7", :sex "f", :hobby "h3"}
-   {:id 18, :sid 1, :fact/type :guest, :name "n8", :sex "f", :hobby "h1"}
-   {:id 19, :sid 1, :fact/type :guest, :name "n8", :sex "f", :hobby "h3"}
-   {:id 20, :sid 1, :fact/type :guest, :name "n8", :sex "f", :hobby "h2"}
-   {:id 21, :sid 1, :fact/type :guest, :name "n9", :sex "f", :hobby "h1"}
-   {:id 22, :sid 1, :fact/type :guest, :name "n9", :sex "f", :hobby "h3"}
-   {:id 23, :sid 1, :fact/type :guest, :name "n9", :sex "f", :hobby "h2"}
-   {:id 24, :sid 1, :fact/type :guest, :name "n10", :sex "m", :hobby "h2"}
-   {:id 25, :sid 1, :fact/type :guest, :name "n10", :sex "m", :hobby "h1"}
-   {:id 26, :sid 1, :fact/type :guest, :name "n11", :sex "m", :hobby "h2"}
-   {:id 27, :sid 1, :fact/type :guest, :name "n11", :sex "m", :hobby "h1"}
-   {:id 28, :sid 1, :fact/type :guest, :name "n12", :sex "m", :hobby "h3"}
-   {:id 29, :sid 1, :fact/type :guest, :name "n12", :sex "m", :hobby "h2"}
-   {:id 30, :sid 1, :fact/type :guest, :name "n13", :sex "m", :hobby "h1"}
-   {:id 31, :sid 1, :fact/type :guest, :name "n13", :sex "m", :hobby "h3"}
-   {:id 32, :sid 1, :fact/type :guest, :name "n14", :sex "m", :hobby "h3"}
-   {:id 33, :sid 1, :fact/type :guest, :name "n14", :sex "m", :hobby "h2"}
-   {:id 34, :sid 1, :fact/type :guest, :name "n15", :sex "f", :hobby "h2"}
-   {:id 35, :sid 1, :fact/type :guest, :name "n15", :sex "f", :hobby "h1"}
-   {:id 36, :sid 1, :fact/type :guest, :name "n15", :sex "f", :hobby "h3"}
-   {:id 37, :sid 1, :fact/type :guest, :name "n16", :sex "f", :hobby "h3"}
-   {:id 38, :sid 1, :fact/type :guest, :name "n16", :sex "f", :hobby "h2"}
-   {:id 39, :sid 1, :fact/type :guest, :name "n16", :sex "f", :hobby "h1"}
-   {:id 40, :sid 1, :fact/type :guest, :name "n17", :sex "m", :hobby "h3"}
-   {:id 41, :sid 1, :fact/type :guest, :name "n17", :sex "m", :hobby "h2"}
-   {:id 42, :sid 1, :fact/type :guest, :name "n18", :sex "f", :hobby "h2"}
-   {:id 43, :sid 1, :fact/type :guest, :name "n18", :sex "f", :hobby "h1"}
-   {:id 44, :sid 1, :fact/type :guest, :name "n19", :sex "f", :hobby "h1"}
-   {:id 45, :sid 1, :fact/type :guest, :name "n19", :sex "f", :hobby "h2"}
-   {:id 46, :sid 1, :fact/type :guest, :name "n19", :sex "f", :hobby "h3"}
-   {:id 47, :sid 1, :fact/type :guest, :name "n20", :sex "f", :hobby "h1"}
-   {:id 48, :sid 1, :fact/type :guest, :name "n20", :sex "f", :hobby "h2"}
-   {:id 49, :sid 1, :fact/type :guest, :name "n20", :sex "f", :hobby "h3"}
-   {:id 50, :sid 1, :fact/type :guest, :name "n21", :sex "m", :hobby "h2"}
-   {:id 51, :sid 1, :fact/type :guest, :name "n21", :sex "m", :hobby "h3"}
-   {:id 52, :sid 1, :fact/type :guest, :name "n21", :sex "m", :hobby "h1"}
-   {:id 53, :sid 1, :fact/type :guest, :name "n22", :sex "f", :hobby "h1"}
-   {:id 54, :sid 1, :fact/type :guest, :name "n22", :sex "f", :hobby "h2"}
-   {:id 55, :sid 1, :fact/type :guest, :name "n22", :sex "f", :hobby "h3"}
-   {:id 56, :sid 1, :fact/type :guest, :name "n23", :sex "f", :hobby "h3"}
-   {:id 57, :sid 1, :fact/type :guest, :name "n23", :sex "f", :hobby "h1"}
-   {:id 58, :sid 1, :fact/type :guest, :name "n23", :sex "f", :hobby "h2"}
-   {:id 59, :sid 1, :fact/type :guest, :name "n24", :sex "m", :hobby "h1"}
-   {:id 60, :sid 1, :fact/type :guest, :name "n24", :sex "m", :hobby "h3"}
-   {:id 61, :sid 1, :fact/type :guest, :name "n25", :sex "f", :hobby "h3"}
-   {:id 62, :sid 1, :fact/type :guest, :name "n25", :sex "f", :hobby "h2"}
-   {:id 63, :sid 1, :fact/type :guest, :name "n25", :sex "f", :hobby "h1"}
-   {:id 64, :sid 1, :fact/type :guest, :name "n26", :sex "f", :hobby "h3"}
-   {:id 65, :sid 1, :fact/type :guest, :name "n26", :sex "f", :hobby "h2"}
-   {:id 66, :sid 1, :fact/type :guest, :name "n26", :sex "f", :hobby "h1"}
-   {:id 67, :sid 1, :fact/type :guest, :name "n27", :sex "m", :hobby "h3"}
-   {:id 68, :sid 1, :fact/type :guest, :name "n27", :sex "m", :hobby "h1"}
-   {:id 69, :sid 1, :fact/type :guest, :name "n27", :sex "m", :hobby "h2"}
-   {:id 70, :sid 1, :fact/type :guest, :name "n28", :sex "m", :hobby "h3"}
-   {:id 71, :sid 1, :fact/type :guest, :name "n28", :sex "m", :hobby "h1"}
-   {:id 72, :sid 1, :fact/type :guest, :name "n29", :sex "m", :hobby "h3"}
-   {:id 73, :sid 1, :fact/type :guest, :name "n29", :sex "m", :hobby "h2"}
-   {:id 74, :sid 1, :fact/type :guest, :name "n29", :sex "m", :hobby "h1"}
-   {:id 75, :sid 1, :fact/type :guest, :name "n30", :sex "m", :hobby "h2"}
-   {:id 76, :sid 1, :fact/type :guest, :name "n30", :sex "m", :hobby "h1"}
-   {:id 77, :sid 1, :fact/type :guest, :name "n30", :sex "m", :hobby "h3"}
-   {:id 78, :sid 1, :fact/type :guest, :name "n31", :sex "m", :hobby "h2"}
-   {:id 79, :sid 1, :fact/type :guest, :name "n31", :sex "m", :hobby "h1"}
-   {:id 80, :sid 1, :fact/type :guest, :name "n32", :sex "m", :hobby "h1"}
-   {:id 81, :sid 1, :fact/type :guest, :name "n32", :sex "m", :hobby "h3"}
-   {:id 82, :sid 1, :fact/type :guest, :name "n32", :sex "m", :hobby "h2"}
-   {:id 83, :sid 1, :fact/type :last_seat, :seat 32}])
+  [{:fact/type :party/guest-data :name "n1" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n1" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n2" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n2" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n2" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n3" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n3" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n4" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n4" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n5" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n5" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n6" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n6" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n6" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n7" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n8" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n8" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n8" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n9" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n9" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n9" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n10" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n10" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n11" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n11" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n12" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n12" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n13" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n13" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n14" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n14" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n15" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n15" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n15" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n16" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n16" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n16" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n17" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n17" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n18" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n18" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n19" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n19" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n19" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n20" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n20" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n20" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n21" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n21" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n21" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n22" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n22" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n22" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n23" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n23" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n23" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n24" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n24" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n25" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n25" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n25" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n26" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n26" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n26" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n27" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n27" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n27" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n28" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n28" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n29" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n29" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n29" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n30" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n30" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n30" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n31" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "n31" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n32" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "n32" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "n32" :sex "m" :hobby "h2"}
+   {:fact/type :party/seats-data :size 32}])
 
 (def manners-128-guest-facts
-  [{:id 1, :sid 1, :fact/type :guest, :name "1", :sex "m", :hobby "h2"}
-   {:id 2, :sid 1, :fact/type :guest, :name "1", :sex "m", :hobby "h3"}
-   {:id 3, :sid 1, :fact/type :guest, :name "1", :sex "m", :hobby "h1"}
-   {:id 4, :sid 1, :fact/type :guest, :name "1", :sex "m", :hobby "h4"}
-   {:id 5, :sid 1, :fact/type :guest, :name "1", :sex "m", :hobby "h5"}
-   {:id 6, :sid 1, :fact/type :guest, :name "2", :sex "f", :hobby "h3"}
-   {:id 7, :sid 1, :fact/type :guest, :name "2", :sex "f", :hobby "h2"}
-   {:id 8, :sid 1, :fact/type :guest, :name "2", :sex "f", :hobby "h1"}
-   {:id 9, :sid 1, :fact/type :guest, :name "2", :sex "f", :hobby "h4"}
-   {:id 10, :sid 1, :fact/type :guest, :name "2", :sex "f", :hobby "h5"}
-   {:id 11, :sid 1, :fact/type :guest, :name "3", :sex "f", :hobby "h5"}
-   {:id 12, :sid 1, :fact/type :guest, :name "3", :sex "f", :hobby "h4"}
-   {:id 13, :sid 1, :fact/type :guest, :name "3", :sex "f", :hobby "h2"}
-   {:id 14, :sid 1, :fact/type :guest, :name "4", :sex "m", :hobby "h3"}
-   {:id 15, :sid 1, :fact/type :guest, :name "4", :sex "m", :hobby "h2"}
-   {:id 16, :sid 1, :fact/type :guest, :name "4", :sex "m", :hobby "h1"}
-   {:id 17, :sid 1, :fact/type :guest, :name "4", :sex "m", :hobby "h4"}
-   {:id 18, :sid 1, :fact/type :guest, :name "5", :sex "m", :hobby "h2"}
-   {:id 19, :sid 1, :fact/type :guest, :name "5", :sex "m", :hobby "h5"}
-   {:id 20, :sid 1, :fact/type :guest, :name "5", :sex "m", :hobby "h3"}
-   {:id 21, :sid 1, :fact/type :guest, :name "6", :sex "f", :hobby "h1"}
-   {:id 22, :sid 1, :fact/type :guest, :name "6", :sex "f", :hobby "h4"}
-   {:id 23, :sid 1, :fact/type :guest, :name "6", :sex "f", :hobby "h2"}
-   {:id 24, :sid 1, :fact/type :guest, :name "6", :sex "f", :hobby "h5"}
-   {:id 25, :sid 1, :fact/type :guest, :name "6", :sex "f", :hobby "h3"}
-   {:id 26, :sid 1, :fact/type :guest, :name "7", :sex "f", :hobby "h1"}
-   {:id 27, :sid 1, :fact/type :guest, :name "7", :sex "f", :hobby "h2"}
-   {:id 28, :sid 1, :fact/type :guest, :name "7", :sex "f", :hobby "h3"}
-   {:id 29, :sid 1, :fact/type :guest, :name "7", :sex "f", :hobby "h5"}
-   {:id 30, :sid 1, :fact/type :guest, :name "8", :sex "m", :hobby "h3"}
-   {:id 31, :sid 1, :fact/type :guest, :name "8", :sex "m", :hobby "h5"}
-   {:id 32, :sid 1, :fact/type :guest, :name "9", :sex "m", :hobby "h3"}
-   {:id 33, :sid 1, :fact/type :guest, :name "9", :sex "m", :hobby "h5"}
-   {:id 34, :sid 1, :fact/type :guest, :name "9", :sex "m", :hobby "h2"}
-   {:id 35, :sid 1, :fact/type :guest, :name "9", :sex "m", :hobby "h4"}
-   {:id 36, :sid 1, :fact/type :guest, :name "10", :sex "m", :hobby "h2"}
-   {:id 37, :sid 1, :fact/type :guest, :name "10", :sex "m", :hobby "h3"}
-   {:id 38, :sid 1, :fact/type :guest, :name "10", :sex "m", :hobby "h4"}
-   {:id 39, :sid 1, :fact/type :guest, :name "10", :sex "m", :hobby "h5"}
-   {:id 40, :sid 1, :fact/type :guest, :name "10", :sex "m", :hobby "h1"}
-   {:id 41, :sid 1, :fact/type :guest, :name "11", :sex "m", :hobby "h2"}
-   {:id 42, :sid 1, :fact/type :guest, :name "11", :sex "m", :hobby "h4"}
-   {:id 43, :sid 1, :fact/type :guest, :name "11", :sex "m", :hobby "h5"}
-   {:id 44, :sid 1, :fact/type :guest, :name "11", :sex "m", :hobby "h1"}
-   {:id 45, :sid 1, :fact/type :guest, :name "12", :sex "f", :hobby "h3"}
-   {:id 46, :sid 1, :fact/type :guest, :name "12", :sex "f", :hobby "h5"}
-   {:id 47, :sid 1, :fact/type :guest, :name "12", :sex "f", :hobby "h2"}
-   {:id 48, :sid 1, :fact/type :guest, :name "13", :sex "f", :hobby "h5"}
-   {:id 49, :sid 1, :fact/type :guest, :name "13", :sex "f", :hobby "h1"}
-   {:id 50, :sid 1, :fact/type :guest, :name "14", :sex "m", :hobby "h3"}
-   {:id 51, :sid 1, :fact/type :guest, :name "14", :sex "m", :hobby "h5"}
-   {:id 52, :sid 1, :fact/type :guest, :name "14", :sex "m", :hobby "h1"}
-   {:id 53, :sid 1, :fact/type :guest, :name "14", :sex "m", :hobby "h4"}
-   {:id 54, :sid 1, :fact/type :guest, :name "15", :sex "m", :hobby "h5"}
-   {:id 55, :sid 1, :fact/type :guest, :name "15", :sex "m", :hobby "h2"}
-   {:id 56, :sid 1, :fact/type :guest, :name "15", :sex "m", :hobby "h1"}
-   {:id 57, :sid 1, :fact/type :guest, :name "15", :sex "m", :hobby "h3"}
-   {:id 58, :sid 1, :fact/type :guest, :name "15", :sex "m", :hobby "h4"}
-   {:id 59, :sid 1, :fact/type :guest, :name "16", :sex "m", :hobby "h2"}
-   {:id 60, :sid 1, :fact/type :guest, :name "16", :sex "m", :hobby "h5"}
-   {:id 61, :sid 1, :fact/type :guest, :name "16", :sex "m", :hobby "h4"}
-   {:id 62, :sid 1, :fact/type :guest, :name "17", :sex "m", :hobby "h4"}
-   {:id 63, :sid 1, :fact/type :guest, :name "17", :sex "m", :hobby "h3"}
-   {:id 64, :sid 1, :fact/type :guest, :name "18", :sex "f", :hobby "h2"}
-   {:id 65, :sid 1, :fact/type :guest, :name "18", :sex "f", :hobby "h4"}
-   {:id 66, :sid 1, :fact/type :guest, :name "18", :sex "f", :hobby "h5"}
-   {:id 67, :sid 1, :fact/type :guest, :name "18", :sex "f", :hobby "h1"}
-   {:id 68, :sid 1, :fact/type :guest, :name "19", :sex "m", :hobby "h5"}
-   {:id 69, :sid 1, :fact/type :guest, :name "19", :sex "m", :hobby "h2"}
-   {:id 70, :sid 1, :fact/type :guest, :name "20", :sex "m", :hobby "h2"}
-   {:id 71, :sid 1, :fact/type :guest, :name "20", :sex "m", :hobby "h3"}
-   {:id 72, :sid 1, :fact/type :guest, :name "21", :sex "m", :hobby "h4"}
-   {:id 73, :sid 1, :fact/type :guest, :name "21", :sex "m", :hobby "h3"}
-   {:id 74, :sid 1, :fact/type :guest, :name "21", :sex "m", :hobby "h2"}
-   {:id 75, :sid 1, :fact/type :guest, :name "21", :sex "m", :hobby "h1"}
-   {:id 76, :sid 1, :fact/type :guest, :name "22", :sex "m", :hobby "h1"}
-   {:id 77, :sid 1, :fact/type :guest, :name "22", :sex "m", :hobby "h2"}
-   {:id 78, :sid 1, :fact/type :guest, :name "22", :sex "m", :hobby "h4"}
-   {:id 79, :sid 1, :fact/type :guest, :name "23", :sex "f", :hobby "h4"}
-   {:id 80, :sid 1, :fact/type :guest, :name "23", :sex "f", :hobby "h5"}
-   {:id 81, :sid 1, :fact/type :guest, :name "23", :sex "f", :hobby "h2"}
-   {:id 82, :sid 1, :fact/type :guest, :name "24", :sex "f", :hobby "h4"}
-   {:id 83, :sid 1, :fact/type :guest, :name "24", :sex "f", :hobby "h3"}
-   {:id 84, :sid 1, :fact/type :guest, :name "24", :sex "f", :hobby "h2"}
-   {:id 85, :sid 1, :fact/type :guest, :name "24", :sex "f", :hobby "h1"}
-   {:id 86, :sid 1, :fact/type :guest, :name "24", :sex "f", :hobby "h5"}
-   {:id 87, :sid 1, :fact/type :guest, :name "25", :sex "m", :hobby "h4"}
-   {:id 88, :sid 1, :fact/type :guest, :name "25", :sex "m", :hobby "h5"}
-   {:id 89, :sid 1, :fact/type :guest, :name "26", :sex "m", :hobby "h1"}
-   {:id 90, :sid 1, :fact/type :guest, :name "26", :sex "m", :hobby "h2"}
-   {:id 91, :sid 1, :fact/type :guest, :name "27", :sex "m", :hobby "h3"}
-   {:id 92, :sid 1, :fact/type :guest, :name "27", :sex "m", :hobby "h5"}
-   {:id 93, :sid 1, :fact/type :guest, :name "27", :sex "m", :hobby "h2"}
-   {:id 94, :sid 1, :fact/type :guest, :name "28", :sex "f", :hobby "h4"}
-   {:id 95, :sid 1, :fact/type :guest, :name "28", :sex "f", :hobby "h1"}
-   {:id 96, :sid 1, :fact/type :guest, :name "28", :sex "f", :hobby "h3"}
-   {:id 97, :sid 1, :fact/type :guest, :name "28", :sex "f", :hobby "h2"}
-   {:id 98, :sid 1, :fact/type :guest, :name "28", :sex "f", :hobby "h5"}
-   {:id 99, :sid 1, :fact/type :guest, :name "29", :sex "f", :hobby "h3"}
-   {:id 100, :sid 1, :fact/type :guest, :name "29", :sex "f", :hobby "h5"}
-   {:id 101, :sid 1, :fact/type :guest, :name "30", :sex "m", :hobby "h2"}
-   {:id 102, :sid 1, :fact/type :guest, :name "30", :sex "m", :hobby "h1"}
-   {:id 103, :sid 1, :fact/type :guest, :name "31", :sex "m", :hobby "h3"}
-   {:id 104, :sid 1, :fact/type :guest, :name "31", :sex "m", :hobby "h1"}
-   {:id 105, :sid 1, :fact/type :guest, :name "31", :sex "m", :hobby "h4"}
-   {:id 106, :sid 1, :fact/type :guest, :name "32", :sex "f", :hobby "h2"}
-   {:id 107, :sid 1, :fact/type :guest, :name "32", :sex "f", :hobby "h1"}
-   {:id 108, :sid 1, :fact/type :guest, :name "32", :sex "f", :hobby "h5"}
-   {:id 109, :sid 1, :fact/type :guest, :name "33", :sex "f", :hobby "h5"}
-   {:id 110, :sid 1, :fact/type :guest, :name "33", :sex "f", :hobby "h4"}
-   {:id 111, :sid 1, :fact/type :guest, :name "34", :sex "m", :hobby "h4"}
-   {:id 112, :sid 1, :fact/type :guest, :name "34", :sex "m", :hobby "h5"}
-   {:id 113, :sid 1, :fact/type :guest, :name "34", :sex "m", :hobby "h2"}
-   {:id 114, :sid 1, :fact/type :guest, :name "35", :sex "f", :hobby "h3"}
-   {:id 115, :sid 1, :fact/type :guest, :name "35", :sex "f", :hobby "h1"}
-   {:id 116, :sid 1, :fact/type :guest, :name "35", :sex "f", :hobby "h4"}
-   {:id 117, :sid 1, :fact/type :guest, :name "35", :sex "f", :hobby "h5"}
-   {:id 118, :sid 1, :fact/type :guest, :name "35", :sex "f", :hobby "h2"}
-   {:id 119, :sid 1, :fact/type :guest, :name "36", :sex "m", :hobby "h1"}
-   {:id 120, :sid 1, :fact/type :guest, :name "36", :sex "m", :hobby "h4"}
-   {:id 121, :sid 1, :fact/type :guest, :name "36", :sex "m", :hobby "h2"}
-   {:id 122, :sid 1, :fact/type :guest, :name "36", :sex "m", :hobby "h3"}
-   {:id 123, :sid 1, :fact/type :guest, :name "37", :sex "f", :hobby "h4"}
-   {:id 124, :sid 1, :fact/type :guest, :name "37", :sex "f", :hobby "h2"}
-   {:id 125, :sid 1, :fact/type :guest, :name "37", :sex "f", :hobby "h1"}
-   {:id 126, :sid 1, :fact/type :guest, :name "38", :sex "f", :hobby "h3"}
-   {:id 127, :sid 1, :fact/type :guest, :name "38", :sex "f", :hobby "h1"}
-   {:id 128, :sid 1, :fact/type :guest, :name "38", :sex "f", :hobby "h2"}
-   {:id 129, :sid 1, :fact/type :guest, :name "38", :sex "f", :hobby "h4"}
-   {:id 130, :sid 1, :fact/type :guest, :name "39", :sex "m", :hobby "h5"}
-   {:id 131, :sid 1, :fact/type :guest, :name "39", :sex "m", :hobby "h2"}
-   {:id 132, :sid 1, :fact/type :guest, :name "40", :sex "m", :hobby "h2"}
-   {:id 133, :sid 1, :fact/type :guest, :name "40", :sex "m", :hobby "h3"}
-   {:id 134, :sid 1, :fact/type :guest, :name "41", :sex "f", :hobby "h5"}
-   {:id 135, :sid 1, :fact/type :guest, :name "41", :sex "f", :hobby "h3"}
-   {:id 136, :sid 1, :fact/type :guest, :name "42", :sex "m", :hobby "h5"}
-   {:id 137, :sid 1, :fact/type :guest, :name "42", :sex "m", :hobby "h4"}
-   {:id 138, :sid 1, :fact/type :guest, :name "43", :sex "m", :hobby "h3"}
-   {:id 139, :sid 1, :fact/type :guest, :name "43", :sex "m", :hobby "h4"}
-   {:id 140, :sid 1, :fact/type :guest, :name "43", :sex "m", :hobby "h5"}
-   {:id 141, :sid 1, :fact/type :guest, :name "44", :sex "f", :hobby "h2"}
-   {:id 142, :sid 1, :fact/type :guest, :name "44", :sex "f", :hobby "h4"}
-   {:id 143, :sid 1, :fact/type :guest, :name "44", :sex "f", :hobby "h3"}
-   {:id 144, :sid 1, :fact/type :guest, :name "44", :sex "f", :hobby "h1"}
-   {:id 145, :sid 1, :fact/type :guest, :name "45", :sex "m", :hobby "h2"}
-   {:id 146, :sid 1, :fact/type :guest, :name "45", :sex "m", :hobby "h4"}
-   {:id 147, :sid 1, :fact/type :guest, :name "46", :sex "m", :hobby "h4"}
-   {:id 148, :sid 1, :fact/type :guest, :name "46", :sex "m", :hobby "h1"}
-   {:id 149, :sid 1, :fact/type :guest, :name "46", :sex "m", :hobby "h5"}
-   {:id 150, :sid 1, :fact/type :guest, :name "47", :sex "m", :hobby "h2"}
-   {:id 151, :sid 1, :fact/type :guest, :name "47", :sex "m", :hobby "h5"}
-   {:id 152, :sid 1, :fact/type :guest, :name "47", :sex "m", :hobby "h4"}
-   {:id 153, :sid 1, :fact/type :guest, :name "48", :sex "f", :hobby "h3"}
-   {:id 154, :sid 1, :fact/type :guest, :name "48", :sex "f", :hobby "h1"}
-   {:id 155, :sid 1, :fact/type :guest, :name "49", :sex "m", :hobby "h1"}
-   {:id 156, :sid 1, :fact/type :guest, :name "49", :sex "m", :hobby "h5"}
-   {:id 157, :sid 1, :fact/type :guest, :name "49", :sex "m", :hobby "h4"}
-   {:id 158, :sid 1, :fact/type :guest, :name "49", :sex "m", :hobby "h3"}
-   {:id 159, :sid 1, :fact/type :guest, :name "49", :sex "m", :hobby "h2"}
-   {:id 160, :sid 1, :fact/type :guest, :name "50", :sex "m", :hobby "h2"}
-   {:id 161, :sid 1, :fact/type :guest, :name "50", :sex "m", :hobby "h4"}
-   {:id 162, :sid 1, :fact/type :guest, :name "50", :sex "m", :hobby "h3"}
-   {:id 163, :sid 1, :fact/type :guest, :name "51", :sex "m", :hobby "h1"}
-   {:id 164, :sid 1, :fact/type :guest, :name "51", :sex "m", :hobby "h2"}
-   {:id 165, :sid 1, :fact/type :guest, :name "51", :sex "m", :hobby "h5"}
-   {:id 166, :sid 1, :fact/type :guest, :name "51", :sex "m", :hobby "h4"}
-   {:id 167, :sid 1, :fact/type :guest, :name "52", :sex "f", :hobby "h5"}
-   {:id 168, :sid 1, :fact/type :guest, :name "52", :sex "f", :hobby "h3"}
-   {:id 169, :sid 1, :fact/type :guest, :name "52", :sex "f", :hobby "h1"}
-   {:id 170, :sid 1, :fact/type :guest, :name "52", :sex "f", :hobby "h4"}
-   {:id 171, :sid 1, :fact/type :guest, :name "53", :sex "f", :hobby "h5"}
-   {:id 172, :sid 1, :fact/type :guest, :name "53", :sex "f", :hobby "h1"}
-   {:id 173, :sid 1, :fact/type :guest, :name "53", :sex "f", :hobby "h4"}
-   {:id 174, :sid 1, :fact/type :guest, :name "53", :sex "f", :hobby "h2"}
-   {:id 175, :sid 1, :fact/type :guest, :name "53", :sex "f", :hobby "h3"}
-   {:id 176, :sid 1, :fact/type :guest, :name "54", :sex "f", :hobby "h1"}
-   {:id 177, :sid 1, :fact/type :guest, :name "54", :sex "f", :hobby "h3"}
-   {:id 178, :sid 1, :fact/type :guest, :name "55", :sex "m", :hobby "h2"}
-   {:id 179, :sid 1, :fact/type :guest, :name "55", :sex "m", :hobby "h4"}
-   {:id 180, :sid 1, :fact/type :guest, :name "56", :sex "m", :hobby "h2"}
-   {:id 181, :sid 1, :fact/type :guest, :name "56", :sex "m", :hobby "h3"}
-   {:id 182, :sid 1, :fact/type :guest, :name "57", :sex "f", :hobby "h2"}
-   {:id 183, :sid 1, :fact/type :guest, :name "57", :sex "f", :hobby "h1"}
-   {:id 184, :sid 1, :fact/type :guest, :name "57", :sex "f", :hobby "h4"}
-   {:id 185, :sid 1, :fact/type :guest, :name "58", :sex "m", :hobby "h5"}
-   {:id 186, :sid 1, :fact/type :guest, :name "58", :sex "m", :hobby "h3"}
-   {:id 187, :sid 1, :fact/type :guest, :name "58", :sex "m", :hobby "h2"}
-   {:id 188, :sid 1, :fact/type :guest, :name "58", :sex "m", :hobby "h1"}
-   {:id 189, :sid 1, :fact/type :guest, :name "58", :sex "m", :hobby "h4"}
-   {:id 190, :sid 1, :fact/type :guest, :name "59", :sex "f", :hobby "h2"}
-   {:id 191, :sid 1, :fact/type :guest, :name "59", :sex "f", :hobby "h3"}
-   {:id 192, :sid 1, :fact/type :guest, :name "59", :sex "f", :hobby "h5"}
-   {:id 193, :sid 1, :fact/type :guest, :name "60", :sex "f", :hobby "h4"}
-   {:id 194, :sid 1, :fact/type :guest, :name "60", :sex "f", :hobby "h2"}
-   {:id 195, :sid 1, :fact/type :guest, :name "60", :sex "f", :hobby "h3"}
-   {:id 196, :sid 1, :fact/type :guest, :name "60", :sex "f", :hobby "h5"}
-   {:id 197, :sid 1, :fact/type :guest, :name "61", :sex "m", :hobby "h1"}
-   {:id 198, :sid 1, :fact/type :guest, :name "61", :sex "m", :hobby "h2"}
-   {:id 199, :sid 1, :fact/type :guest, :name "61", :sex "m", :hobby "h4"}
-   {:id 200, :sid 1, :fact/type :guest, :name "61", :sex "m", :hobby "h3"}
-   {:id 201, :sid 1, :fact/type :guest, :name "62", :sex "f", :hobby "h3"}
-   {:id 202, :sid 1, :fact/type :guest, :name "62", :sex "f", :hobby "h2"}
-   {:id 203, :sid 1, :fact/type :guest, :name "62", :sex "f", :hobby "h5"}
-   {:id 204, :sid 1, :fact/type :guest, :name "62", :sex "f", :hobby "h4"}
-   {:id 205, :sid 1, :fact/type :guest, :name "62", :sex "f", :hobby "h1"}
-   {:id 206, :sid 1, :fact/type :guest, :name "63", :sex "f", :hobby "h2"}
-   {:id 207, :sid 1, :fact/type :guest, :name "63", :sex "f", :hobby "h3"}
-   {:id 208, :sid 1, :fact/type :guest, :name "63", :sex "f", :hobby "h4"}
-   {:id 209, :sid 1, :fact/type :guest, :name "63", :sex "f", :hobby "h1"}
-   {:id 210, :sid 1, :fact/type :guest, :name "63", :sex "f", :hobby "h5"}
-   {:id 211, :sid 1, :fact/type :guest, :name "64", :sex "f", :hobby "h2"}
-   {:id 212, :sid 1, :fact/type :guest, :name "64", :sex "f", :hobby "h4"}
-   {:id 213, :sid 1, :fact/type :guest, :name "64", :sex "f", :hobby "h1"}
-   {:id 214, :sid 1, :fact/type :guest, :name "64", :sex "f", :hobby "h5"}
-   {:id 215, :sid 1, :fact/type :guest, :name "64", :sex "f", :hobby "h3"}
-   {:id 216, :sid 1, :fact/type :guest, :name "65", :sex "m", :hobby "h5"}
-   {:id 217, :sid 1, :fact/type :guest, :name "65", :sex "m", :hobby "h3"}
-   {:id 218, :sid 1, :fact/type :guest, :name "65", :sex "m", :hobby "h2"}
-   {:id 219, :sid 1, :fact/type :guest, :name "65", :sex "m", :hobby "h1"}
-   {:id 220, :sid 1, :fact/type :guest, :name "65", :sex "m", :hobby "h4"}
-   {:id 221, :sid 1, :fact/type :guest, :name "66", :sex "f", :hobby "h5"}
-   {:id 222, :sid 1, :fact/type :guest, :name "66", :sex "f", :hobby "h3"}
-   {:id 223, :sid 1, :fact/type :guest, :name "66", :sex "f", :hobby "h4"}
-   {:id 224, :sid 1, :fact/type :guest, :name "67", :sex "f", :hobby "h1"}
-   {:id 225, :sid 1, :fact/type :guest, :name "67", :sex "f", :hobby "h4"}
-   {:id 226, :sid 1, :fact/type :guest, :name "68", :sex "m", :hobby "h4"}
-   {:id 227, :sid 1, :fact/type :guest, :name "68", :sex "m", :hobby "h2"}
-   {:id 228, :sid 1, :fact/type :guest, :name "68", :sex "m", :hobby "h1"}
-   {:id 229, :sid 1, :fact/type :guest, :name "68", :sex "m", :hobby "h5"}
-   {:id 230, :sid 1, :fact/type :guest, :name "69", :sex "m", :hobby "h3"}
-   {:id 231, :sid 1, :fact/type :guest, :name "69", :sex "m", :hobby "h4"}
-   {:id 232, :sid 1, :fact/type :guest, :name "69", :sex "m", :hobby "h1"}
-   {:id 233, :sid 1, :fact/type :guest, :name "70", :sex "f", :hobby "h3"}
-   {:id 234, :sid 1, :fact/type :guest, :name "70", :sex "f", :hobby "h5"}
-   {:id 235, :sid 1, :fact/type :guest, :name "70", :sex "f", :hobby "h1"}
-   {:id 236, :sid 1, :fact/type :guest, :name "70", :sex "f", :hobby "h4"}
-   {:id 237, :sid 1, :fact/type :guest, :name "70", :sex "f", :hobby "h2"}
-   {:id 238, :sid 1, :fact/type :guest, :name "71", :sex "m", :hobby "h3"}
-   {:id 239, :sid 1, :fact/type :guest, :name "71", :sex "m", :hobby "h1"}
-   {:id 240, :sid 1, :fact/type :guest, :name "71", :sex "m", :hobby "h4"}
-   {:id 241, :sid 1, :fact/type :guest, :name "72", :sex "m", :hobby "h4"}
-   {:id 242, :sid 1, :fact/type :guest, :name "72", :sex "m", :hobby "h3"}
-   {:id 243, :sid 1, :fact/type :guest, :name "72", :sex "m", :hobby "h1"}
-   {:id 244, :sid 1, :fact/type :guest, :name "73", :sex "f", :hobby "h4"}
-   {:id 245, :sid 1, :fact/type :guest, :name "73", :sex "f", :hobby "h1"}
-   {:id 246, :sid 1, :fact/type :guest, :name "73", :sex "f", :hobby "h3"}
-   {:id 247, :sid 1, :fact/type :guest, :name "74", :sex "f", :hobby "h1"}
-   {:id 248, :sid 1, :fact/type :guest, :name "74", :sex "f", :hobby "h4"}
-   {:id 249, :sid 1, :fact/type :guest, :name "74", :sex "f", :hobby "h2"}
-   {:id 250, :sid 1, :fact/type :guest, :name "74", :sex "f", :hobby "h5"}
-   {:id 251, :sid 1, :fact/type :guest, :name "74", :sex "f", :hobby "h3"}
-   {:id 252, :sid 1, :fact/type :guest, :name "75", :sex "f", :hobby "h4"}
-   {:id 253, :sid 1, :fact/type :guest, :name "75", :sex "f", :hobby "h2"}
-   {:id 254, :sid 1, :fact/type :guest, :name "76", :sex "f", :hobby "h5"}
-   {:id 255, :sid 1, :fact/type :guest, :name "76", :sex "f", :hobby "h4"}
-   {:id 256, :sid 1, :fact/type :guest, :name "76", :sex "f", :hobby "h3"}
-   {:id 257, :sid 1, :fact/type :guest, :name "76", :sex "f", :hobby "h2"}
-   {:id 258, :sid 1, :fact/type :guest, :name "76", :sex "f", :hobby "h1"}
-   {:id 259, :sid 1, :fact/type :guest, :name "77", :sex "m", :hobby "h1"}
-   {:id 260, :sid 1, :fact/type :guest, :name "77", :sex "m", :hobby "h5"}
-   {:id 261, :sid 1, :fact/type :guest, :name "78", :sex "m", :hobby "h5"}
-   {:id 262, :sid 1, :fact/type :guest, :name "78", :sex "m", :hobby "h1"}
-   {:id 263, :sid 1, :fact/type :guest, :name "79", :sex "f", :hobby "h1"}
-   {:id 264, :sid 1, :fact/type :guest, :name "79", :sex "f", :hobby "h3"}
-   {:id 265, :sid 1, :fact/type :guest, :name "79", :sex "f", :hobby "h4"}
-   {:id 266, :sid 1, :fact/type :guest, :name "79", :sex "f", :hobby "h2"}
-   {:id 267, :sid 1, :fact/type :guest, :name "79", :sex "f", :hobby "h5"}
-   {:id 268, :sid 1, :fact/type :guest, :name "80", :sex "m", :hobby "h5"}
-   {:id 269, :sid 1, :fact/type :guest, :name "80", :sex "m", :hobby "h1"}
-   {:id 270, :sid 1, :fact/type :guest, :name "80", :sex "m", :hobby "h2"}
-   {:id 271, :sid 1, :fact/type :guest, :name "80", :sex "m", :hobby "h4"}
-   {:id 272, :sid 1, :fact/type :guest, :name "81", :sex "m", :hobby "h4"}
-   {:id 273, :sid 1, :fact/type :guest, :name "81", :sex "m", :hobby "h1"}
-   {:id 274, :sid 1, :fact/type :guest, :name "82", :sex "m", :hobby "h3"}
-   {:id 275, :sid 1, :fact/type :guest, :name "82", :sex "m", :hobby "h4"}
-   {:id 276, :sid 1, :fact/type :guest, :name "82", :sex "m", :hobby "h1"}
-   {:id 277, :sid 1, :fact/type :guest, :name "82", :sex "m", :hobby "h2"}
-   {:id 278, :sid 1, :fact/type :guest, :name "82", :sex "m", :hobby "h5"}
-   {:id 279, :sid 1, :fact/type :guest, :name "83", :sex "f", :hobby "h1"}
-   {:id 280, :sid 1, :fact/type :guest, :name "83", :sex "f", :hobby "h3"}
-   {:id 281, :sid 1, :fact/type :guest, :name "83", :sex "f", :hobby "h4"}
-   {:id 282, :sid 1, :fact/type :guest, :name "84", :sex "m", :hobby "h3"}
-   {:id 283, :sid 1, :fact/type :guest, :name "84", :sex "m", :hobby "h4"}
-   {:id 284, :sid 1, :fact/type :guest, :name "85", :sex "f", :hobby "h4"}
-   {:id 285, :sid 1, :fact/type :guest, :name "85", :sex "f", :hobby "h1"}
-   {:id 286, :sid 1, :fact/type :guest, :name "86", :sex "m", :hobby "h3"}
-   {:id 287, :sid 1, :fact/type :guest, :name "86", :sex "m", :hobby "h4"}
-   {:id 288, :sid 1, :fact/type :guest, :name "87", :sex "m", :hobby "h5"}
-   {:id 289, :sid 1, :fact/type :guest, :name "87", :sex "m", :hobby "h4"}
-   {:id 290, :sid 1, :fact/type :guest, :name "87", :sex "m", :hobby "h2"}
-   {:id 291, :sid 1, :fact/type :guest, :name "87", :sex "m", :hobby "h3"}
-   {:id 292, :sid 1, :fact/type :guest, :name "88", :sex "m", :hobby "h2"}
-   {:id 293, :sid 1, :fact/type :guest, :name "88", :sex "m", :hobby "h5"}
-   {:id 294, :sid 1, :fact/type :guest, :name "88", :sex "m", :hobby "h3"}
-   {:id 295, :sid 1, :fact/type :guest, :name "88", :sex "m", :hobby "h1"}
-   {:id 296, :sid 1, :fact/type :guest, :name "88", :sex "m", :hobby "h4"}
-   {:id 297, :sid 1, :fact/type :guest, :name "89", :sex "f", :hobby "h5"}
-   {:id 298, :sid 1, :fact/type :guest, :name "89", :sex "f", :hobby "h2"}
-   {:id 299, :sid 1, :fact/type :guest, :name "89", :sex "f", :hobby "h4"}
-   {:id 300, :sid 1, :fact/type :guest, :name "89", :sex "f", :hobby "h1"}
-   {:id 301, :sid 1, :fact/type :guest, :name "90", :sex "m", :hobby "h2"}
-   {:id 302, :sid 1, :fact/type :guest, :name "90", :sex "m", :hobby "h4"}
-   {:id 303, :sid 1, :fact/type :guest, :name "90", :sex "m", :hobby "h5"}
-   {:id 304, :sid 1, :fact/type :guest, :name "91", :sex "f", :hobby "h2"}
-   {:id 305, :sid 1, :fact/type :guest, :name "91", :sex "f", :hobby "h3"}
-   {:id 306, :sid 1, :fact/type :guest, :name "91", :sex "f", :hobby "h5"}
-   {:id 307, :sid 1, :fact/type :guest, :name "91", :sex "f", :hobby "h1"}
-   {:id 308, :sid 1, :fact/type :guest, :name "91", :sex "f", :hobby "h4"}
-   {:id 309, :sid 1, :fact/type :guest, :name "92", :sex "f", :hobby "h3"}
-   {:id 310, :sid 1, :fact/type :guest, :name "92", :sex "f", :hobby "h1"}
-   {:id 311, :sid 1, :fact/type :guest, :name "92", :sex "f", :hobby "h2"}
-   {:id 312, :sid 1, :fact/type :guest, :name "92", :sex "f", :hobby "h5"}
-   {:id 313, :sid 1, :fact/type :guest, :name "93", :sex "f", :hobby "h3"}
-   {:id 314, :sid 1, :fact/type :guest, :name "93", :sex "f", :hobby "h1"}
-   {:id 315, :sid 1, :fact/type :guest, :name "93", :sex "f", :hobby "h2"}
-   {:id 316, :sid 1, :fact/type :guest, :name "94", :sex "f", :hobby "h2"}
-   {:id 317, :sid 1, :fact/type :guest, :name "94", :sex "f", :hobby "h5"}
-   {:id 318, :sid 1, :fact/type :guest, :name "95", :sex "f", :hobby "h3"}
-   {:id 319, :sid 1, :fact/type :guest, :name "95", :sex "f", :hobby "h4"}
-   {:id 320, :sid 1, :fact/type :guest, :name "96", :sex "m", :hobby "h1"}
-   {:id 321, :sid 1, :fact/type :guest, :name "96", :sex "m", :hobby "h4"}
-   {:id 322, :sid 1, :fact/type :guest, :name "96", :sex "m", :hobby "h2"}
-   {:id 323, :sid 1, :fact/type :guest, :name "96", :sex "m", :hobby "h5"}
-   {:id 324, :sid 1, :fact/type :guest, :name "96", :sex "m", :hobby "h3"}
-   {:id 325, :sid 1, :fact/type :guest, :name "97", :sex "f", :hobby "h4"}
-   {:id 326, :sid 1, :fact/type :guest, :name "97", :sex "f", :hobby "h2"}
-   {:id 327, :sid 1, :fact/type :guest, :name "97", :sex "f", :hobby "h5"}
-   {:id 328, :sid 1, :fact/type :guest, :name "98", :sex "m", :hobby "h5"}
-   {:id 329, :sid 1, :fact/type :guest, :name "98", :sex "m", :hobby "h4"}
-   {:id 330, :sid 1, :fact/type :guest, :name "99", :sex "f", :hobby "h2"}
-   {:id 331, :sid 1, :fact/type :guest, :name "99", :sex "f", :hobby "h5"}
-   {:id 332, :sid 1, :fact/type :guest, :name "100", :sex "m", :hobby "h2"}
-   {:id 333, :sid 1, :fact/type :guest, :name "100", :sex "m", :hobby "h3"}
-   {:id 334, :sid 1, :fact/type :guest, :name "100", :sex "m", :hobby "h5"}
-   {:id 335, :sid 1, :fact/type :guest, :name "100", :sex "m", :hobby "h4"}
-   {:id 336, :sid 1, :fact/type :guest, :name "101", :sex "f", :hobby "h2"}
-   {:id 337, :sid 1, :fact/type :guest, :name "101", :sex "f", :hobby "h1"}
-   {:id 338, :sid 1, :fact/type :guest, :name "101", :sex "f", :hobby "h5"}
-   {:id 339, :sid 1, :fact/type :guest, :name "101", :sex "f", :hobby "h3"}
-   {:id 340, :sid 1, :fact/type :guest, :name "101", :sex "f", :hobby "h4"}
-   {:id 341, :sid 1, :fact/type :guest, :name "102", :sex "f", :hobby "h2"}
-   {:id 342, :sid 1, :fact/type :guest, :name "102", :sex "f", :hobby "h1"}
-   {:id 343, :sid 1, :fact/type :guest, :name "102", :sex "f", :hobby "h5"}
-   {:id 344, :sid 1, :fact/type :guest, :name "102", :sex "f", :hobby "h3"}
-   {:id 345, :sid 1, :fact/type :guest, :name "102", :sex "f", :hobby "h4"}
-   {:id 346, :sid 1, :fact/type :guest, :name "103", :sex "m", :hobby "h2"}
-   {:id 347, :sid 1, :fact/type :guest, :name "103", :sex "m", :hobby "h1"}
-   {:id 348, :sid 1, :fact/type :guest, :name "103", :sex "m", :hobby "h4"}
-   {:id 349, :sid 1, :fact/type :guest, :name "103", :sex "m", :hobby "h3"}
-   {:id 350, :sid 1, :fact/type :guest, :name "103", :sex "m", :hobby "h5"}
-   {:id 351, :sid 1, :fact/type :guest, :name "104", :sex "m", :hobby "h5"}
-   {:id 352, :sid 1, :fact/type :guest, :name "104", :sex "m", :hobby "h3"}
-   {:id 353, :sid 1, :fact/type :guest, :name "104", :sex "m", :hobby "h4"}
-   {:id 354, :sid 1, :fact/type :guest, :name "104", :sex "m", :hobby "h1"}
-   {:id 355, :sid 1, :fact/type :guest, :name "104", :sex "m", :hobby "h2"}
-   {:id 356, :sid 1, :fact/type :guest, :name "105", :sex "f", :hobby "h4"}
-   {:id 357, :sid 1, :fact/type :guest, :name "105", :sex "f", :hobby "h2"}
-   {:id 358, :sid 1, :fact/type :guest, :name "106", :sex "f", :hobby "h4"}
-   {:id 359, :sid 1, :fact/type :guest, :name "106", :sex "f", :hobby "h5"}
-   {:id 360, :sid 1, :fact/type :guest, :name "106", :sex "f", :hobby "h1"}
-   {:id 361, :sid 1, :fact/type :guest, :name "107", :sex "f", :hobby "h3"}
-   {:id 362, :sid 1, :fact/type :guest, :name "107", :sex "f", :hobby "h1"}
-   {:id 363, :sid 1, :fact/type :guest, :name "107", :sex "f", :hobby "h2"}
-   {:id 364, :sid 1, :fact/type :guest, :name "107", :sex "f", :hobby "h5"}
-   {:id 365, :sid 1, :fact/type :guest, :name "107", :sex "f", :hobby "h4"}
-   {:id 366, :sid 1, :fact/type :guest, :name "108", :sex "f", :hobby "h4"}
-   {:id 367, :sid 1, :fact/type :guest, :name "108", :sex "f", :hobby "h5"}
-   {:id 368, :sid 1, :fact/type :guest, :name "108", :sex "f", :hobby "h1"}
-   {:id 369, :sid 1, :fact/type :guest, :name "108", :sex "f", :hobby "h2"}
-   {:id 370, :sid 1, :fact/type :guest, :name "108", :sex "f", :hobby "h3"}
-   {:id 371, :sid 1, :fact/type :guest, :name "109", :sex "f", :hobby "h1"}
-   {:id 372, :sid 1, :fact/type :guest, :name "109", :sex "f", :hobby "h2"}
-   {:id 373, :sid 1, :fact/type :guest, :name "110", :sex "m", :hobby "h5"}
-   {:id 374, :sid 1, :fact/type :guest, :name "110", :sex "m", :hobby "h4"}
-   {:id 375, :sid 1, :fact/type :guest, :name "110", :sex "m", :hobby "h1"}
-   {:id 376, :sid 1, :fact/type :guest, :name "110", :sex "m", :hobby "h2"}
-   {:id 377, :sid 1, :fact/type :guest, :name "111", :sex "f", :hobby "h3"}
-   {:id 378, :sid 1, :fact/type :guest, :name "111", :sex "f", :hobby "h2"}
-   {:id 379, :sid 1, :fact/type :guest, :name "112", :sex "f", :hobby "h4"}
-   {:id 380, :sid 1, :fact/type :guest, :name "112", :sex "f", :hobby "h3"}
-   {:id 381, :sid 1, :fact/type :guest, :name "112", :sex "f", :hobby "h5"}
-   {:id 382, :sid 1, :fact/type :guest, :name "112", :sex "f", :hobby "h2"}
-   {:id 383, :sid 1, :fact/type :guest, :name "112", :sex "f", :hobby "h1"}
-   {:id 384, :sid 1, :fact/type :guest, :name "113", :sex "f", :hobby "h1"}
-   {:id 385, :sid 1, :fact/type :guest, :name "113", :sex "f", :hobby "h3"}
-   {:id 386, :sid 1, :fact/type :guest, :name "113", :sex "f", :hobby "h5"}
-   {:id 387, :sid 1, :fact/type :guest, :name "113", :sex "f", :hobby "h2"}
-   {:id 388, :sid 1, :fact/type :guest, :name "114", :sex "m", :hobby "h3"}
-   {:id 389, :sid 1, :fact/type :guest, :name "114", :sex "m", :hobby "h2"}
-   {:id 390, :sid 1, :fact/type :guest, :name "115", :sex "m", :hobby "h2"}
-   {:id 391, :sid 1, :fact/type :guest, :name "115", :sex "m", :hobby "h1"}
-   {:id 392, :sid 1, :fact/type :guest, :name "115", :sex "m", :hobby "h5"}
-   {:id 393, :sid 1, :fact/type :guest, :name "115", :sex "m", :hobby "h4"}
-   {:id 394, :sid 1, :fact/type :guest, :name "116", :sex "m", :hobby "h3"}
-   {:id 395, :sid 1, :fact/type :guest, :name "116", :sex "m", :hobby "h4"}
-   {:id 396, :sid 1, :fact/type :guest, :name "116", :sex "m", :hobby "h5"}
-   {:id 397, :sid 1, :fact/type :guest, :name "116", :sex "m", :hobby "h1"}
-   {:id 398, :sid 1, :fact/type :guest, :name "117", :sex "f", :hobby "h4"}
-   {:id 399, :sid 1, :fact/type :guest, :name "117", :sex "f", :hobby "h5"}
-   {:id 400, :sid 1, :fact/type :guest, :name "117", :sex "f", :hobby "h2"}
-   {:id 401, :sid 1, :fact/type :guest, :name "118", :sex "f", :hobby "h2"}
-   {:id 402, :sid 1, :fact/type :guest, :name "118", :sex "f", :hobby "h4"}
-   {:id 403, :sid 1, :fact/type :guest, :name "118", :sex "f", :hobby "h3"}
-   {:id 404, :sid 1, :fact/type :guest, :name "119", :sex "m", :hobby "h5"}
-   {:id 405, :sid 1, :fact/type :guest, :name "119", :sex "m", :hobby "h3"}
-   {:id 406, :sid 1, :fact/type :guest, :name "120", :sex "m", :hobby "h5"}
-   {:id 407, :sid 1, :fact/type :guest, :name "120", :sex "m", :hobby "h1"}
-   {:id 408, :sid 1, :fact/type :guest, :name "120", :sex "m", :hobby "h3"}
-   {:id 409, :sid 1, :fact/type :guest, :name "120", :sex "m", :hobby "h2"}
-   {:id 410, :sid 1, :fact/type :guest, :name "120", :sex "m", :hobby "h4"}
-   {:id 411, :sid 1, :fact/type :guest, :name "121", :sex "f", :hobby "h4"}
-   {:id 412, :sid 1, :fact/type :guest, :name "121", :sex "f", :hobby "h2"}
-   {:id 413, :sid 1, :fact/type :guest, :name "121", :sex "f", :hobby "h3"}
-   {:id 414, :sid 1, :fact/type :guest, :name "121", :sex "f", :hobby "h5"}
-   {:id 415, :sid 1, :fact/type :guest, :name "122", :sex "m", :hobby "h1"}
-   {:id 416, :sid 1, :fact/type :guest, :name "122", :sex "m", :hobby "h2"}
-   {:id 417, :sid 1, :fact/type :guest, :name "122", :sex "m", :hobby "h5"}
-   {:id 418, :sid 1, :fact/type :guest, :name "123", :sex "m", :hobby "h2"}
-   {:id 419, :sid 1, :fact/type :guest, :name "123", :sex "m", :hobby "h3"}
-   {:id 420, :sid 1, :fact/type :guest, :name "123", :sex "m", :hobby "h1"}
-   {:id 421, :sid 1, :fact/type :guest, :name "123", :sex "m", :hobby "h5"}
-   {:id 422, :sid 1, :fact/type :guest, :name "124", :sex "f", :hobby "h2"}
-   {:id 423, :sid 1, :fact/type :guest, :name "124", :sex "f", :hobby "h3"}
-   {:id 424, :sid 1, :fact/type :guest, :name "124", :sex "f", :hobby "h4"}
-   {:id 425, :sid 1, :fact/type :guest, :name "125", :sex "f", :hobby "h3"}
-   {:id 426, :sid 1, :fact/type :guest, :name "125", :sex "f", :hobby "h5"}
-   {:id 427, :sid 1, :fact/type :guest, :name "125", :sex "f", :hobby "h2"}
-   {:id 428, :sid 1, :fact/type :guest, :name "125", :sex "f", :hobby "h4"}
-   {:id 429, :sid 1, :fact/type :guest, :name "126", :sex "f", :hobby "h2"}
-   {:id 430, :sid 1, :fact/type :guest, :name "126", :sex "f", :hobby "h3"}
-   {:id 431, :sid 1, :fact/type :guest, :name "126", :sex "f", :hobby "h1"}
-   {:id 432, :sid 1, :fact/type :guest, :name "126", :sex "f", :hobby "h4"}
-   {:id 433, :sid 1, :fact/type :guest, :name "127", :sex "f", :hobby "h5"}
-   {:id 434, :sid 1, :fact/type :guest, :name "127", :sex "f", :hobby "h1"}
-   {:id 435, :sid 1, :fact/type :guest, :name "128", :sex "f", :hobby "h2"}
-   {:id 436, :sid 1, :fact/type :guest, :name "128", :sex "f", :hobby "h4"}
-   {:id 437, :sid 1, :fact/type :guest, :name "128", :sex "f", :hobby "h1"}
-   {:id 438, :sid 1, :fact/type :guest, :name "128", :sex "f", :hobby "h3"}
-   {:id 439, :sid 1, :fact/type :last_seat, :seat 128}])
+  [{:fact/type :party/guest-data :name "1" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "1" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "1" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "1" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "1" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "2" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "2" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "2" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "2" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "2" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "3" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "3" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "3" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "4" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "4" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "4" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "4" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "5" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "5" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "5" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "6" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "6" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "6" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "6" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "6" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "7" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "7" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "7" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "7" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "8" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "8" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "9" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "9" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "9" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "9" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "10" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "10" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "10" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "10" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "10" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "11" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "11" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "11" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "11" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "12" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "12" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "12" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "13" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "13" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "14" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "14" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "14" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "14" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "15" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "15" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "15" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "15" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "15" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "16" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "16" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "16" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "17" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "17" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "18" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "18" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "18" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "18" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "19" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "19" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "20" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "20" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "21" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "21" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "21" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "21" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "22" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "22" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "22" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "23" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "23" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "23" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "24" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "24" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "24" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "24" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "24" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "25" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "25" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "26" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "26" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "27" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "27" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "27" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "28" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "28" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "28" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "28" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "28" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "29" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "29" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "30" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "30" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "31" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "31" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "31" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "32" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "32" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "32" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "33" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "33" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "34" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "34" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "34" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "35" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "35" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "35" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "35" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "35" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "36" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "36" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "36" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "36" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "37" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "37" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "37" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "38" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "38" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "38" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "38" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "39" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "39" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "40" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "40" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "41" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "41" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "42" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "42" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "43" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "43" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "43" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "44" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "44" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "44" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "44" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "45" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "45" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "46" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "46" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "46" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "47" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "47" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "47" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "48" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "48" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "49" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "49" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "49" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "49" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "49" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "50" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "50" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "50" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "51" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "51" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "51" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "51" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "52" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "52" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "52" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "52" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "53" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "53" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "53" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "53" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "53" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "54" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "54" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "55" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "55" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "56" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "56" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "57" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "57" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "57" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "58" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "58" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "58" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "58" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "58" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "59" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "59" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "59" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "60" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "60" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "60" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "60" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "61" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "61" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "61" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "61" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "62" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "62" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "62" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "62" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "62" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "63" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "63" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "63" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "63" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "63" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "64" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "64" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "64" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "64" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "64" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "65" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "65" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "65" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "65" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "65" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "66" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "66" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "66" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "67" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "67" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "68" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "68" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "68" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "68" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "69" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "69" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "69" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "70" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "70" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "70" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "70" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "70" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "71" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "71" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "71" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "72" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "72" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "72" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "73" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "73" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "73" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "74" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "74" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "74" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "74" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "74" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "75" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "75" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "76" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "76" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "76" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "76" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "76" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "77" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "77" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "78" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "78" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "79" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "79" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "79" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "79" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "79" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "80" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "80" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "80" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "80" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "81" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "81" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "82" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "82" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "82" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "82" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "82" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "83" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "83" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "83" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "84" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "84" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "85" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "85" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "86" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "86" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "87" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "87" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "87" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "87" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "88" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "88" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "88" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "88" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "88" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "89" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "89" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "89" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "89" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "90" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "90" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "90" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "91" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "91" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "91" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "91" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "91" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "92" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "92" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "92" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "92" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "93" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "93" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "93" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "94" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "94" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "95" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "95" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "96" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "96" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "96" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "96" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "96" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "97" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "97" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "97" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "98" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "98" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "99" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "99" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "100" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "100" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "100" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "100" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "101" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "101" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "101" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "101" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "101" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "102" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "102" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "102" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "102" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "102" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "103" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "103" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "103" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "103" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "103" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "104" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "104" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "104" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "104" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "104" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "105" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "105" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "106" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "106" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "106" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "107" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "107" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "107" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "107" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "107" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "108" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "108" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "108" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "108" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "108" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "109" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "109" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "110" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "110" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "110" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "110" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "111" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "111" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "112" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "112" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "112" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "112" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "112" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "113" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "113" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "113" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "113" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "114" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "114" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "115" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "115" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "115" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "115" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "116" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "116" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "116" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "116" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "117" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "117" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "117" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "118" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "118" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "118" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "119" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "119" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "120" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "120" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "120" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "120" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "120" :sex "m" :hobby "h4"}
+   {:fact/type :party/guest-data :name "121" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "121" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "121" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "121" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "122" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "122" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "122" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "123" :sex "m" :hobby "h2"}
+   {:fact/type :party/guest-data :name "123" :sex "m" :hobby "h3"}
+   {:fact/type :party/guest-data :name "123" :sex "m" :hobby "h1"}
+   {:fact/type :party/guest-data :name "123" :sex "m" :hobby "h5"}
+   {:fact/type :party/guest-data :name "124" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "124" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "124" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "125" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "125" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "125" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "125" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "126" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "126" :sex "f" :hobby "h3"}
+   {:fact/type :party/guest-data :name "126" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "126" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "127" :sex "f" :hobby "h5"}
+   {:fact/type :party/guest-data :name "127" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "128" :sex "f" :hobby "h2"}
+   {:fact/type :party/guest-data :name "128" :sex "f" :hobby "h4"}
+   {:fact/type :party/guest-data :name "128" :sex "f" :hobby "h1"}
+   {:fact/type :party/guest-data :name "128" :sex "f" :hobby "h3"}
+   {:fact/type :party/seats-data :size 128}])
