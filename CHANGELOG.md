@@ -5,6 +5,8 @@ This is a history of changes to k13labs/clara-rules.
 * `clojure.lang.Fn` now implements `clara.rules.compiler/IRuleSource`, and returns a single rule by invoking the like `(a-rule)`.
 * add built-in support to serialize `clojure.lang.Var` so that a rule handler var can be serialized correctly.
 * add function `clara.rules.compiler/load-rules-from-source` to simplify loading rules
+* add `defhierarchy` macro to define hierarchies of facts allowing to easily establish parent/child relationships.
+* rename `clear-ns-productions!` to `clear-ns-vars!` since now there are ns-installed vars that are not productions.
 
 # 1.3.2
 * Enhance memory add-activations implementation by replacing get/set with compute!

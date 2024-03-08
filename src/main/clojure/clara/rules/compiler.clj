@@ -66,6 +66,12 @@
 (defprotocol IRuleSource
   (load-rules [source]))
 
+(defprotocol IFactSource
+  (load-facts [source]))
+
+(defprotocol IHierarchySource
+  (load-hierarchies [source]))
+
 (sc/defschema BetaNode
   "These nodes exist in the beta network."
   (sc/pred (comp #{ProductionNode
@@ -180,6 +186,8 @@
                  (#{'clojure.core/= 'clojure.core/==} (qualify-when-sym op))))))
 
 (def ^:dynamic *compile-ctx* nil)
+
+(def ^:dynamic *hierarchy* nil)
 
 (defn try-eval
   "Evals the given `expr`.  If an exception is thrown, it is caught and an
@@ -2137,7 +2145,32 @@
     (var? source)
     (load-rules-from-source @source)
 
-    :else [source]))
+    (:lhs source)
+    [source]
+
+    :else []))
+
+(defn load-hierarchies-from-source
+  "loads the hierarchies from a source if it implements `IRuleSource`, or navigates inside
+  collections to load from vectors, lists, sets, seqs."
+  [source]
+  (cond
+    (u/instance-satisfies? IHierarchySource source)
+    (load-hierarchies source)
+
+    (or (vector? source)
+        (list? source)
+        (set? source)
+        (seq? source))
+    (mapcat load-hierarchies-from-source source)
+
+    (var? source)
+    (load-hierarchies-from-source @source)
+
+    (:parents source)
+    [source]
+
+    :else []))
 
 (defn mk-session
   "Creates a new session using the given rule source. The resulting session

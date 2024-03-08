@@ -1,9 +1,12 @@
 (ns user
+  (:refer-clojure :exclude [derive underive])
   (:require [criterium.core :refer [report-result
                                     quick-benchmark] :as crit]
             [clara.rules.platform :refer [compute-for]]
             [clojure.core.async :refer [go timeout <!]]
-            [clara.rules :refer [defrule mk-session clear-ns-productions!]]
+            [clara.rules :refer [defrule defhierarchy
+                                 mk-session clear-ns-vars!
+                                 derive! underive!]]
             [clara.rules.compiler :as com]
             [clojure.core.cache.wrapped :as cache]
             [schema.core :as sc]
@@ -15,6 +18,11 @@
   (add-tap #'println)
   (remove-tap #'println)
   (tap> "foobar"))
+
+(defhierarchy foobar
+  (derive! :foo/bar :bar/foo)
+  (derive! :foo/zulu :foo/bar)
+  (underive! :foo/zzz :foo/whaaaa))
 
 (def session-cache
   (cache/lru-cache-factory {}))
@@ -69,7 +77,7 @@
         ~@fact-rules))))
 
 (comment
-  (clear-ns-productions!)
+  (clear-ns-vars!)
   (mk-types 2500)
   (def rules
     (mk-rules 2500))
