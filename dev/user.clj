@@ -4,8 +4,8 @@
                                     quick-benchmark] :as crit]
             [clara.rules.platform :refer [compute-for]]
             [clojure.core.async :refer [go timeout <!]]
-            [clara.rules :refer [defrule defquery defhierarchy insert!
-                                 insert insert-all fire-rules query
+            [clara.rules :refer [defrule defquery defdata defhierarchy
+                                 insert! insert insert-all fire-rules query
                                  mk-session clear-ns-vars!
                                  derive! underive!]]
             [clara.rules.compiler :as com]
@@ -37,13 +37,15 @@
   []
   [?output <- :thing/result])
 
-(def ^:fact foo
+(defdata foo
   {:type :thing/foo
    :value 1})
 
-(def ^:fact bar
-  {:type :thing/bar
-   :value 2})
+(defdata bar
+  [{:type :thing/bar
+    :value 2}
+   {:type :thing/bar
+    :value 3}])
 
 (time
  (-> (mk-session 'user :fact-type-fn :type)

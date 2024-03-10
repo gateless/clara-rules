@@ -372,6 +372,17 @@
        (binding [hierarchy/*hierarchy* (atom (hierarchy/make-hierarchy))]
          ~@body))))
 
+(defmacro defdata
+  "Defines a data fact which is stored in the given var. For instance, the following fact is simply a
+  map which is then inserted into the session when the namespace is loaded.
+
+  (defdata default-temperature
+    (Cold. 32))"
+  [name & body]
+  (let [doc (if (string? (first body)) (first body) nil)]
+    `(def ~(vary-meta name assoc :fact true :doc doc)
+       ~@body)))
+
 (defmacro clear-ns-vars!
   "Ensures that any rule/query definitions which have been cached will be cleared from the associated namespace.
   Rule and query definitions can be cached such that if their definitions are not explicitly overwritten with the same
