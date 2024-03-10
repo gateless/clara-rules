@@ -7,7 +7,7 @@
 (defn make-hierarchy
   []
   (-> (core/make-hierarchy)
-      (assoc :operations [])))
+      (assoc :hierarchy-data [])))
 
 (def ^:dynamic *hierarchy* nil)
 
@@ -69,7 +69,7 @@
    (swap! *hierarchy* derive tag parent))
   ([h tag parent]
    (-> (derive* h tag parent)
-       (update :operations conj [:d tag parent]))))
+       (update :hierarchy-data conj [:d tag parent]))))
 
 (defn underive
   "Removes a parent/child relationship between parent and
@@ -82,4 +82,4 @@
    (swap! *hierarchy* underive tag parent))
   ([h tag parent]
    (-> (underive* h tag parent)
-       (update :operations conj [:u tag parent]))))
+       (update :hierarchy-data conj [:u tag parent]))))

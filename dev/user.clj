@@ -4,7 +4,8 @@
                                     quick-benchmark] :as crit]
             [clara.rules.platform :refer [compute-for]]
             [clojure.core.async :refer [go timeout <!]]
-            [clara.rules :refer [defrule defhierarchy
+            [clara.rules :refer [defrule defquery defhierarchy insert!
+                                 insert insert-all fire-rules query
                                  mk-session clear-ns-vars!
                                  derive! underive!]]
             [clara.rules.compiler :as com]
@@ -15,14 +16,39 @@
   (:import [java.util.concurrent CompletableFuture]))
 
 (comment
+  (clear-ns-vars!)
   (add-tap #'println)
   (remove-tap #'println)
   (tap> "foobar"))
 
 (defhierarchy foobar
-  (derive! :foo/bar :bar/foo)
-  (derive! :foo/zulu :foo/bar)
-  (underive! :foo/zzz :foo/whaaaa))
+  (derive! :thing/foo :thing/that)
+  (doseq [x (range 20)]
+    (derive! [:thing/foo (- 20 x)] [:thing/that (- 20 x)]))
+  (derive! :thing/bar :thing/that))
+
+(defrule return-a-thing
+  [:thing/that [{:keys [value]}] (= value ?value)]
+  =>
+  (insert! {:type :thing/result
+            :value ?value}))
+
+(defquery query-a-thing
+  []
+  [?output <- :thing/result])
+
+(def ^:fact foo
+  {:type :thing/foo
+   :value 1})
+
+(def ^:fact bar
+  {:type :thing/bar
+   :value 2})
+
+(time
+ (-> (mk-session 'user :fact-type-fn :type)
+     (fire-rules)
+     (query query-a-thing)))
 
 (def session-cache
   (cache/lru-cache-factory {}))
@@ -89,7 +115,7 @@
 
   (time
    (mk-session 'user [(conj rules {:ns-name (ns-name *ns*)
-                                   :lhs [{:type :foobar16
+                                   :lhs [{:type :foobar1
                                           :constraints []}]
                                    :rhs `(println ~(str :foobar))})]
                :cache session-cache
