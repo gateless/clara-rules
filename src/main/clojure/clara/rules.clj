@@ -161,7 +161,7 @@
           (mapcat com/load-facts-from-source @resolved)
 
           :else
-          (throw (ex-info (str "The source referenced by " sym " is not valid.") {:sym sym}))))
+          []))
 
       ;; The symbol is not qualified, so treat it as a namespace.
       (->> (ns-interns sym)
@@ -194,7 +194,7 @@
           (mapcat com/load-hierarchies-from-source @resolved)
 
           :else
-          (throw (ex-info (str "The source referenced by " sym " is not valid.") {:sym sym}))))
+          []))
 
       ;; The symbol is not qualified, so treat it as a namespace.
       (->> (ns-interns sym)
@@ -228,7 +228,7 @@
           (mapcat com/load-rules-from-source @resolved)
 
           :else
-          (throw (ex-info (str "The source referenced by " sym " is not valid.") {:sym sym}))))
+          []))
 
       ;; The symbol is not qualified, so treat it as a namespace.
       (->> (ns-interns sym)

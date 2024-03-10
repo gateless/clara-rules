@@ -116,7 +116,7 @@
 (defn- md5-hash
   "Returns the md5 digest of the given data after converting it to a string"
   [x]
-  (digest/md5 ^String (str x)))
+  (digest/md5 ^String (pr-str x)))
 
 (defn- is-variable?
   "Returns true if the given expression is a variable (a symbol prefixed by ?)"
@@ -2178,10 +2178,13 @@
     (var? source)
     (load-facts-from-source @source)
 
-    (:hierarchy-data source)
+    (fn? source) ;;; source is a rule fn so it can't also be a fact unless explicitly inserted
     []
 
-    (:lhs source)
+    (:hierarchy-data source) ;;; source is a hierarchy so it can't also be a fact unless explicitly inserted
+    []
+
+    (:lhs source) ;;; source is a production so it can't also be a fact unless explicitly inserted
     []
 
     :else [source]))
