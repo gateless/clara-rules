@@ -141,39 +141,6 @@
     [(afn)]))
 
 (extend-type clojure.lang.Symbol
-  com/IFactSource
-  (load-facts [sym]
-    ;; Find the facts in the namespace, shred them,
-    ;; and compile them into a rule base.
-    (if (namespace sym)
-      ;; The symbol is qualified, so load hierarchies in the qualified symbol.
-      (let [resolved (resolve sym)]
-        (when (nil? resolved)
-          (throw (ex-info (str "Unable to resolve fact source: " sym) {:sym sym})))
-
-        (cond
-          ;; The symbol references a fact, so just return it
-          (:hierarchy (meta resolved))
-          (com/load-facts-from-source @resolved)
-
-          ;; The symbol references a sequence, so ensure we load all sources.
-          (sequential? @resolved)
-          (mapcat com/load-facts-from-source @resolved)
-
-          :else
-          []))
-
-      ;; The symbol is not qualified, so treat it as a namespace.
-      (->> (ns-interns sym)
-           (vals) ; Get the references in the namespace.
-           (filter var?)
-           (filter (comp (some-fn :fact :fact-seq) meta)) ; Filter down to fact and fact-seq, and seqs of both.
-           ;; If definitions are created dynamically (i.e. are not reflected in an actual code file)
-           ;; it is possible that they won't have :line metadata, so we have a default of 0.
-           (sort (fn [v1 v2]
-                   (compare (or (:line (meta v1)) 0)
-                            (or (:line (meta v2)) 0))))
-           (mapcat com/load-facts-from-source))))
   com/IHierarchySource
   (load-hierarchies [sym]
     ;; Find the hierarchies in the namespace, shred them,
@@ -371,17 +338,6 @@
     `(def ~(vary-meta name assoc :hierarchy true :doc doc)
        (binding [hierarchy/*hierarchy* (atom (hierarchy/make-hierarchy))]
          ~@body))))
-
-(defmacro defdata
-  "Defines a data fact which is stored in the given var. For instance, the following fact is simply a
-  map which is then inserted into the session when the namespace is loaded.
-
-  (defdata default-temperature
-    (Cold. 32))"
-  [name & body]
-  (let [doc (if (string? (first body)) (first body) nil)]
-    `(def ~(vary-meta name assoc :fact true :doc doc)
-       ~@body)))
 
 (defmacro clear-ns-vars!
   "Ensures that any rule/query definitions which have been cached will be cleared from the associated namespace.

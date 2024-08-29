@@ -555,6 +555,7 @@
    Options for the rulebase semantics that are documented at clara.rules/mk-session include:
 
    * :fact-type-fn
+   * :hash-expr-fn
    * :ancestors-fn
    * :activation-group-sort-fn
    * :activation-group-fn
