@@ -326,8 +326,8 @@
   [name & body]
   (let [doc (if (and (string? (first body))
                      (odd? (count body)))
-               (first body)
-               nil)
+              (first body)
+              nil)
         derive-seq (if doc (rest body) body)
         derive-all (for [[tag parent] (partition 2 derive-seq)]
                      (list 'clojure.core/derive tag parent))]
