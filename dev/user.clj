@@ -1,13 +1,11 @@
 (ns user
-  (:refer-clojure :exclude [derive underive])
   (:require [criterium.core :refer [report-result
                                     quick-benchmark] :as crit]
             [clara.rules.platform :refer [compute-for]]
             [clojure.core.async :refer [go timeout <!]]
             [clara.rules :refer [defrule defquery defhierarchy
                                  insert! insert-all! insert insert-all fire-rules query
-                                 mk-session clear-ns-vars!
-                                 derive! underive!]]
+                                 mk-session clear-ns-vars!]]
             [clara.rules.compiler :as com]
             [clojure.core.cache.wrapped :as cache]
             [schema.core :as sc]
@@ -22,10 +20,8 @@
   (tap> "foobar"))
 
 (defhierarchy foobar
-  (derive! :thing/foo :thing/that)
-  (doseq [x (range 20)]
-    (derive! [:thing/foo (- 20 x)] [:thing/that (- 20 x)]))
-  (derive! :thing/bar :thing/that))
+  :thing/foo :thing/that
+  :thing/bar :thing/that)
 
 (defrule return-a-thing
   [:thing/that [{:keys [value]}] (= value ?value)]

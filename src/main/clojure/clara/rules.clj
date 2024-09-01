@@ -1,7 +1,6 @@
 (ns clara.rules
   "Forward-chaining rules for Clojure. The primary API is in this namespace."
   (:require [clara.rules.engine :as eng]
-            [clara.rules.hierarchy :as hierarchy]
             [clara.rules.platform :as platform]
             [clara.rules.compiler :as com]
             [clara.rules.dsl :as dsl]))
@@ -316,28 +315,25 @@
     `(def ~(vary-meta name assoc :query true :doc doc)
        ~(dsl/build-query name body (meta &form)))))
 
-(defn derive!
-  [child parent]
-  (hierarchy/derive child parent))
-
-(defn underive!
-  [child parent]
-  (hierarchy/underive child parent))
-
 (defmacro defhierarchy
   "Defines a hierarchy and stores it in the given var. For instance, a simple hierarchy that adds
   several child->parent relationships would look like this:
   (defhierarchy order-types
     \"Defines several order types\"
-    (derive! :order/hvac :order/service)
-    (derive! :order/plumber :order/service)
-    (underive! :order/cinema :order/service))
-  See the [hierarchy authoring documentation](http://www.clara-rules.org)"
+    :order/hvac     :order/service
+    :order/plumber  :order/service
+    :order/cinema   :order/service)"
   [name & body]
-  (let [doc (if (string? (first body)) (first body) nil)]
+  (let [doc (if (and (string? (first body))
+                     (odd? (count body)))
+               (first body)
+               nil)
+        derive-seq (if doc (rest body) body)
+        derive-all (for [[tag parent] (partition 2 derive-seq)]
+                     (list 'clojure.core/derive tag parent))]
     `(def ~(vary-meta name assoc :hierarchy true :doc doc)
-       (binding [hierarchy/*hierarchy* (atom (hierarchy/make-hierarchy))]
-         ~@body))))
+       (-> (make-hierarchy)
+           ~@derive-all))))
 
 (defmacro clear-ns-vars!
   "Ensures that any rule/query definitions which have been cached will be cleared from the associated namespace.

@@ -5,9 +5,7 @@
   (:require [clara.rules.engine :as eng]
             [clara.rules.schema :as schema]
             [clara.rules.platform :refer [jeq-wrap] :as platform]
-            [clara.rules.hierarchy :as hierarchy]
             [clojure.core.cache.wrapped :as cache]
-            [clj-commons.digest :as digest]
             [ham-fisted.api :as hf]
             [ham-fisted.set :as hs]
             [ham-fisted.mut-map :as hm]
@@ -179,8 +177,6 @@
                  (#{'clojure.core/= 'clojure.core/==} (qualify-when-sym op))))))
 
 (def ^:dynamic *compile-ctx* nil)
-
-(def ^:dynamic *hierarchy* nil)
 
 (defn try-eval
   "Evals the given `expr`.  If an exception is thrown, it is caught and an
@@ -2165,19 +2161,12 @@
     (var? source)
     (load-hierarchies-from-source @source)
 
-    (:hierarchy-data source)
+    (and (:parents source)
+         (:ancestors source)
+         (:descendants source))
     [source]
 
     :else []))
-
-(defn- reduce-hierarchy
-  [h {:keys [hierarchy-data]}]
-  (reduce (fn apply-op
-            [h [op tag parent]]
-            (case op
-              :d (hierarchy/derive h tag parent)
-              :u (hierarchy/underive h tag parent)
-              (throw (ex-info "Unsupported operation building hierarchy" {:op op})))) h hierarchy-data))
 
 (defn mk-session
   "Creates a new session using the given rule source. The resulting session
@@ -2192,10 +2181,16 @@
                               (into (sorted-set-by production-load-order-comp) productions-unique)
                               ;; Store the name of the custom comparator for durability.
                               {:clara.rules.durability/comparator-name `production-load-order-comp})
+         options-hierarchy (get options :hierarchy)
          hierarchies-loaded (cond->> (mapcat load-hierarchies-from-source sources)
-                              (:hierarchy options) (cons (:hierarchy options)))
+                              options-hierarchy
+                              (cons (:hierarchy options)))
          hierarchy (when (seq hierarchies-loaded)
-                     (reduce reduce-hierarchy (hierarchy/make-hierarchy) hierarchies-loaded))
+                     (->> (for [{:keys [parents]} hierarchies-loaded
+                                [tag parent-set] parents
+                                parent parent-set]
+                            [tag parent])
+                          (reduce (partial apply derive) (make-hierarchy))))
          options (cond-> options
                    (some? hierarchy)
                    (assoc :hierarchy hierarchy))
