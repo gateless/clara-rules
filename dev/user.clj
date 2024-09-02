@@ -42,10 +42,11 @@
     {:type :thing/bar
      :value 3}]))
 
-(time
- (-> (mk-session 'user :fact-type-fn :type)
-     (fire-rules)
-     (query query-a-thing)))
+(comment
+  (time
+   (-> (mk-session 'user :fact-type-fn :type)
+       (fire-rules)
+       (query query-a-thing))))
 
 (def session-cache
   (cache/lru-cache-factory {}))
