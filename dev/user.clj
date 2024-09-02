@@ -1,17 +1,15 @@
 (ns user
   (:require [criterium.core :refer [report-result
-                                    quick-benchmark] :as crit]
-            [clara.rules.platform :refer [compute-for]]
-            [clojure.core.async :refer [go timeout <!]]
+                                    quick-benchmark
+                                    with-progress-reporting] :as crit]
             [clara.rules :refer [defrule defquery defhierarchy
-                                 insert! insert-all! insert insert-all fire-rules query
-                                 mk-session clear-ns-vars!]]
-            [clara.rules.compiler :as com]
-            [clojure.core.cache.wrapped :as cache]
-            [schema.core :as sc]
-            [ham-fisted.api :as hf]
-            [ham-fisted.mut-map :as hm])
-  (:import [java.util.concurrent CompletableFuture]))
+                                 insert! insert-all!
+                                 insert insert-all
+                                 fire-rules
+                                 query
+                                 mk-session
+                                 clear-ns-vars!]]
+            [clojure.core.cache.wrapped :as cache]))
 
 (comment
   (clear-ns-vars!)
