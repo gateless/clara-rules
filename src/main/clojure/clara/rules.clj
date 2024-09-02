@@ -231,6 +231,8 @@
   * :ancestors-fn, which returns a collection of ancestors for a given type. Defaults to Clojure's ancestors function. A
   fact of a given type will match any rule that uses one of that type's ancestors.  Note that if the collection is ordered
   this ordering will be maintained by Clara; ordering the ancestors consistently will increase the consistency of overall performance.
+  * :hierarchy, can be used to get ancestors using Clojure's ancestors function. This an alternative or compliment to
+  providing a custom :ancestors-fn function.
   * :activation-group-fn, a function applied to production structures and returns the group they should be activated with.
   It defaults to checking the :salience property, or 0 if none exists.
   * :activation-group-sort-fn, a comparator function used to sort the values returned by the above :activation-group-fn.
@@ -347,8 +349,6 @@
                         (filter (comp (some-fn :rule
                                                :query
                                                :hierarchy
-                                               :fact
-                                               :fact-seq
                                                :production-seq) meta second)) ; Filter down to rules, queries, facts, and hierarchy.
                         (map first))] ; Take the symbols for each var
     (doseq [psym clara-syms]

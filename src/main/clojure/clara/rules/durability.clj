@@ -466,7 +466,7 @@
 
 (defn opts->get-alphas-fn [rulebase opts]
   (let [fact-type-fn (:fact-type-fn opts type)
-        ancestors-fn (:ancestors-fn opts ancestors)]
+        ancestors-fn (com/create-ancestors-fn opts)]
     (create-get-alphas-fn fact-type-fn
                           ancestors-fn
                           (:alpha-roots rulebase))))
@@ -557,6 +557,7 @@
    * :fact-type-fn
    * :hash-expr-fn
    * :ancestors-fn
+   * :hierarchy
    * :activation-group-sort-fn
    * :activation-group-fn
 
