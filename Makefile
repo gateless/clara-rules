@@ -15,7 +15,7 @@ repl: compile-test-java
 	clojure -M:dev:test:app:repl
 
 test: compile-test-java
-	clojure -M:dev:test:app:runner --focus :unit --reporter kaocha.report/documentation --no-capture-output
+	clojure -M:dev:test:app:runner --focus :unit --focus :coverage --reporter kaocha.report/documentation --no-capture-output
 
 test-coverage: compile-test-java
 	clojure -M:dev:test:app:runner --focus :coverage --reporter kaocha.report/documentation --no-capture-output
