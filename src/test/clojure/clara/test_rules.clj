@@ -1353,6 +1353,32 @@
     (assert-ex-data {:variables #{'?unbound}}
                     (mk-session [negation-equality-unbound]))))
 
+(deftest test-capture-env-bindings
+  (let [foo 100
+        bar 200
+        zulu 300
+        test-capture-env-rule1 (dsl/parse-rule [[:bar]]
+                                               (insert! :thing {:foo foo}
+                                                        :bar bar))
+        test-capture-env-query1 (dsl/parse-query [] [[?result <- :bar [{:keys [a-foo a-bar]}]
+                                                      (= a-foo foo) (= a-bar bar)]])]
+    (defrule test-capture-env-rule2
+      [:bar]
+      =>
+      (insert! :thing {:foo foo
+                       :bar bar}))
+    (defquery test-capture-env-query2
+      []
+      [?result <- :bar [{:keys [a-foo a-bar]}]
+       (= a-foo foo) (= a-bar bar)])
+
+    (is (= {:foo 100
+            :bar 200}
+           (:env test-capture-env-rule1)
+           (:env (test-capture-env-rule2))
+           (:env test-capture-env-query1)
+           (:env test-capture-env-query2)))))
+
 ;; Test for: https://github.com/cerner/clara-rules/issues/96
 (deftest test-destructured-binding
   (let [rule-output-env (atom nil)
@@ -1384,6 +1410,27 @@
         (fire-rules))
 
     (is (= 42 @rule-output-env))))
+
+(deftest test-destructured-join-node-env-binding
+  (let [rule-output-env (atom #{})
+        rule {:name "clara.test-destructured-binding/test-destructured-test-env-binding"
+              :env {:rule-output rule-output-env} ; Rule environment so we can check its output.
+              :lhs '[{:args [[e a v]]
+                      :type :foo
+                      :constraints [(= e ?entity) (= v ?foo-value) (swap! rule-output conj ?foo-value)]}
+                     {:accumulator (clara.rules.accumulators/all),
+                      :from
+                      {:args [[e a v]]
+                       :type :bar
+                       :constraints [(= e ?entity) (= v ?bar-value) (swap! rule-output conj ?bar-value)]},
+                      :result-binding :?resp}]
+              :rhs '(inc 1)}]
+    (-> (mk-session [rule] :fact-type-fn second)
+        (insert [1 :foo 42])
+        (insert [1 :bar 43])
+        (fire-rules))
+
+    (is (= #{42 43} @rule-output-env))))
 
 (def locals-shadowing-tester
   "Used to demonstrate local shadowing works in `test-explicit-rhs-map-can-use-ns-name-for-unqualified-symbols` below."

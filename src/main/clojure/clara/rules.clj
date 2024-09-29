@@ -262,7 +262,7 @@
         {:keys [bindings production]} rule-node
         rule-handler (com/compile-action-handler rule-name bindings
                                                  (:rhs production)
-                                                 (:env production))
+                                                 &env)
         [rule-args & rule-body] (drop 2 rule-handler)
         name-with-meta (vary-meta rule-name assoc :rule true :doc doc)
         handler-name (symbol (name (ns-name *ns*)) (name rule-name))] ;;; The compiled RHS
