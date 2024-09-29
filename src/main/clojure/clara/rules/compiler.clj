@@ -396,16 +396,17 @@
                             binding-keys)
 
         ;; The destructured environment, if any.
-        destructured-env (if (> (count env) 0)
-                           {:keys (mapv #(symbol (name %)) (keys env))}
-                           '?__env__)]
-    `(fn ~action-name [~'?__token__ ~destructured-env]
+        destructured-env (if (pos? (count env))
+                           {:keys (mapv (comp symbol name) (keys env)) :as '?__env__}
+                           '?__env__)
+        destructured-bindings (if (pos? (count token-binding-keys))
+                                {{:keys (mapv (comp symbol name) token-binding-keys)} :bindings
+                                 :as '?__token__}
+                                '?__token__)]
+    `(fn ~action-name [~destructured-bindings ~destructured-env]
        ;; similar to test nodes, nothing in the contract of an RHS enforces that bound variables must be used.
        ;; similarly we will not bind anything in this event, and thus the let block would be superfluous.
-       ~(if (seq token-binding-keys)
-          `(let [{:keys [~@(map (comp symbol name) token-binding-keys)]} (:bindings ~'?__token__)]
-             ~rhs)
-          rhs))))
+       ~rhs)))
 
 (defn compile-action
   "Compile the right-hand-side action of a rule, returning a function to execute it."
@@ -1714,6 +1715,7 @@
            ;; Create an accumulator structure for use when examining the node or the tokens
            ;; it produces.
            {:accumulator (:accumulator beta-node)
+            :env env
             ;; Include the original filter expressions in the constraints for inspection tooling.
             :from (update-in condition [:constraints]
                              into (-> beta-node :join-filter-expressions :constraints))}
