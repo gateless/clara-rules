@@ -1,5 +1,10 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.4.1
+* ensure parse-rule, parse-query, defrule, defquery macros capture local env
+* add env support to expression/accumulator join nodes
+* add tests to ensure we can build and compile clara rules using graalvm
+
 # 1.4.0
 * (breaking change) renamed the protocol `IRuleSource/load-rules` to `IClaraSource/load-source`, which can load rules and hierarchies.
 * (breaking change) rename `clear-ns-productions!` to `clear-ns-vars!` since now there are ns-installed vars that are not productions.
