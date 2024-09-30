@@ -16,6 +16,8 @@
           :ns-default build}
   :dev {:extra-paths ["dev"]
         :extra-deps {reloaded.repl/reloaded.repl {:mvn/version "0.2.4"}
+                     org.slf4j/slf4j-api {:mvn/version "2.0.16"}
+                     org.slf4j/slf4j-simple {:mvn/version "2.0.16"}
                      org.clojure/math.combinatorics {:mvn/version "0.3.0"}
                      criterium/criterium {:mvn/version "0.4.6"}}}
 
