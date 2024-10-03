@@ -1,6 +1,9 @@
 This is a history of changes to k13labs/clara-rules.
 
 # 1.4.1
+* update k13labs/futurama to latest version
+
+# 1.4.1
 * ensure parse-rule, parse-query, defrule, defquery macros capture local env
 * add env support to expression/accumulator join nodes
 * add tests to ensure we can build and compile clara rules using graalvm
