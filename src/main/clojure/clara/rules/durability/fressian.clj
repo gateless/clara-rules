@@ -61,6 +61,10 @@
 (def ^:private ^Map class->factory-fn-sym (java.util.Collections/synchronizedMap
                                            (WeakHashMap.)))
 
+;; This private var is used during deserialization of a rulebase or rules-session
+;; when the :read-only? option is passed, then it is bound to the *read-only* var,
+;; and the the read handlers use this value to check if the expression fns should be added.
+;; when *read-only* is false, the expre fns are added, when it is true they are excluded.
 (def ^:private ^:dynamic *read-only* false)
 
 (defn record-map-constructor-name
