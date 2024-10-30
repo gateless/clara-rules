@@ -14,7 +14,6 @@
                                    <!
                                    <!*
                                    !<!
-                                   !<!*
                                    !<!!]])
   (:import [java.util.concurrent CompletableFuture]))
 
@@ -2011,6 +2010,28 @@
             (alpha-retract root fact-group memory transport listener))
           (fire-rules-handler session opts))))))
 
+(defn- query*
+  [rulebase memory query params]
+  (let [query-node (get-in rulebase [:query-nodes query])]
+    (when (= nil query-node)
+      (platform/throw-error (str "The query " query " is invalid or not included in the rule base.")))
+    (when-not (= (into #{} (keys params)) ;; nil params should be equivalent to #{}
+                 (:param-keys query-node))
+      (platform/throw-error (str "The query " query " was not provided with the correct parameters, expected: "
+                                 (:param-keys query-node) ", provided: " (set (keys params)))))
+
+    (->> (mem/get-tokens memory query-node params)
+
+         ;; Get the bindings for each token and filter generate symbols.
+         (map (fn [{bindings :bindings}]
+
+                ;; Filter generated symbols. We check first since this is an uncommon flow.
+                (if (some #(re-find #"__gen" (name %)) (keys bindings))
+
+                  (into {} (remove (fn [[k _v]] (re-find #"__gen"  (name k)))
+                                   bindings))
+                  bindings))))))
+
 (declare ->LocalSession)
 
 (deftype LocalSession [rulebase memory transport listener get-alphas-fn pending-operations]
@@ -2087,25 +2108,7 @@
                        []))))
 
   (query [session query params]
-    (let [query-node (get-in rulebase [:query-nodes query])]
-      (when (= nil query-node)
-        (platform/throw-error (str "The query " query " is invalid or not included in the rule base.")))
-      (when-not (= (into #{} (keys params)) ;; nil params should be equivalent to #{}
-                   (:param-keys query-node))
-        (platform/throw-error (str "The query " query " was not provided with the correct parameters, expected: "
-                                   (:param-keys query-node) ", provided: " (set (keys params)))))
-
-      (->> (mem/get-tokens memory query-node params)
-
-           ;; Get the bindings for each token and filter generate symbols.
-           (map (fn [{bindings :bindings}]
-
-                  ;; Filter generated symbols. We check first since this is an uncommon flow.
-                  (if (some #(re-find #"__gen" (name %)) (keys bindings))
-
-                    (into {} (remove (fn [[k v]] (re-find #"__gen"  (name k)))
-                                     bindings))
-                    bindings))))))
+    (query* rulebase memory query params))
 
   (components [session]
     {:rulebase rulebase
@@ -2137,6 +2140,60 @@
                     l/default-listener)
                   get-alphas-fn
                   []))
+
+(defn- throw-unsupported-read-only-operation
+  [op]
+  (throw (UnsupportedOperationException. (format "%s: this session is read-only" op))))
+
+(deftype ReadOnlyLocalSession [rulebase memory]
+  ISession
+  (insert [session facts]
+    (throw-unsupported-read-only-operation "insert"))
+  (retract [session facts]
+    (throw-unsupported-read-only-operation "retract"))
+  (fire-rules [session]
+    (throw-unsupported-read-only-operation "fire-rules"))
+  (fire-rules [session opts]
+    (throw-unsupported-read-only-operation "fire-rules"))
+  (fire-rules-async [session]
+    (throw-unsupported-read-only-operation "fire-rules-async"))
+  (fire-rules-async [session opts]
+    (throw-unsupported-read-only-operation "fire-rules-async"))
+  (query [session query params]
+    (query* rulebase memory query params))
+
+  (components [session]
+    {:rulebase rulebase
+     :memory memory}))
+
+(defn rulebase->query-only-rulebase
+  "Construcs a read only network from a rulebase, the read only network only contains query nodes"
+  [rulebase]
+  (assoc rulebase
+         :alpha-roots {}
+         :beta-roots []
+         :productions #{}
+         :production-nodes []
+         :id-to-node {}
+         :activation-group-sort-fn nil
+         :activation-group-fn nil
+         :get-alphas-fn nil
+         :node-expr-fn-lookup {}))
+
+(defn assemble-read-only
+  [{:keys [rulebase memory]}]
+  (let [{:keys [query-nodes]} rulebase
+        query-only-rulebase (rulebase->query-only-rulebase rulebase)
+        query-node-set (set (vals query-nodes))
+        query-beta-memory (into {}
+                                (for [query-node query-node-set]
+                                  [(:id query-node) (mem/get-tokens-map memory query-node)]))
+        query-only-memory (mem/map->PersistentLocalMemory {:beta-memory query-beta-memory})]
+    (ReadOnlyLocalSession. query-only-rulebase query-only-memory)))
+
+(defn as-read-only
+  [session]
+  (assemble-read-only (components session)))
 
 (defn with-listener
   "Return a new session with the listener added to the provided session,

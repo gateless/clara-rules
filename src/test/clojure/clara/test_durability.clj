@@ -13,7 +13,9 @@
             [clara.rules.compiler :as com]
             [clara.tools.testing-utils :as tu])
   (:import [clara.rules.testfacts Temperature]
-           [clara.rules.engine TestNode]))
+           [clara.rules.engine TestNode]
+           [clara.rules.engine ReadOnlyLocalSession]
+           [java.io ByteArrayInputStream ByteArrayOutputStream]))
 
 (use-fixtures :once st/validate-schemas)
 
@@ -180,10 +182,10 @@
                             (condp = serde-type
                               :fressian (df/create-session-serializer stream)))
 
-        rulebase-baos (java.io.ByteArrayOutputStream.)
+        rulebase-baos (ByteArrayOutputStream.)
         rulebase-serializer (create-serializer rulebase-baos)
 
-        session-baos (java.io.ByteArrayOutputStream.)
+        session-baos (ByteArrayOutputStream.)
         session-serializer (create-serializer session-baos)
 
         holder (atom [])
@@ -200,46 +202,71 @@
     (let [rulebase-data (.toByteArray rulebase-baos)
           session-data (.toByteArray session-baos)
 
-          rulebase-bais (java.io.ByteArrayInputStream. rulebase-data)
-          session-bais (java.io.ByteArrayInputStream. session-data)
-          rulebase-serializer (create-serializer rulebase-bais)
-          session-serializer (create-serializer session-bais)
+          mk-rulebase-serializer #(create-serializer
+                                   (ByteArrayInputStream. rulebase-data))
+          mk-session-serializer #(create-serializer
+                                  (ByteArrayInputStream. session-data))
 
-          restored-rulebase (d/deserialize-rulebase rulebase-serializer)
-          restored (d/deserialize-session-state session-serializer
+          restored-rulebase (d/deserialize-rulebase (mk-rulebase-serializer))
+          ro-restored-rulebase (d/deserialize-rulebase (mk-rulebase-serializer) {:read-only? true})
+          restored (d/deserialize-session-state (mk-session-serializer)
                                                 mem-serializer
                                                 {:base-rulebase restored-rulebase})
+          ro-restored (d/deserialize-session-state (mk-session-serializer)
+                                                   mem-serializer
+                                                   {:base-rulebase ro-restored-rulebase
+                                                    :read-only? true})
 
           r-unpaired-res (query restored dr/unpaired-wind-speed)
+          ro-unpaired-res (query ro-restored dr/unpaired-wind-speed)
           r-cold-res (query restored dr/cold-temp)
+          ro-cold-res (query ro-restored dr/cold-temp)
           r-hot-res (query restored dr/hot-temp)
+          ro-hot-res (query ro-restored dr/hot-temp)
           r-temp-his-res (query restored dr/temp-his)
+          ro-temp-his-res (query ro-restored dr/temp-his)
           r-temps-under-thresh-res (query restored dr/temps-under-thresh)
+          ro-temps-under-thresh-res (query ro-restored dr/temps-under-thresh)
 
           facts (sort-by hash @(:holder mem-serializer))]
+      (testing "Ensure restored read-only session"
+        (is (instance? ReadOnlyLocalSession ro-restored))
+        (is (thrown? UnsupportedOperationException
+                     (fire-rules ro-restored)))
+        (is (thrown? UnsupportedOperationException
+                     (fire-rules-async ro-restored)))
+        (is (thrown? UnsupportedOperationException
+                     (insert ro-restored)))
+        (is (thrown? UnsupportedOperationException
+                     (retract ro-restored))))
 
       (testing "Ensure the queries return same before and after serialization"
         (is (= (frequencies [{:?ws (dr/->UnpairedWindSpeed ws10)}])
                (frequencies unpaired-res)
-               (frequencies r-unpaired-res)))
+               (frequencies r-unpaired-res)
+               (frequencies ro-unpaired-res)))
 
         (is (= (frequencies [{:?c (->Cold 20)}])
                (frequencies cold-res)
-               (frequencies r-cold-res)))
+               (frequencies r-cold-res)
+               (frequencies ro-cold-res)))
 
         (is (= (frequencies [{:?h (->Hot 50)}
                              {:?h (->Hot 40)}
                              {:?h (->Hot 30)}])
                (frequencies hot-res)
-               (frequencies r-hot-res)))
+               (frequencies r-hot-res)
+               (frequencies ro-hot-res)))
 
         (is (= (frequencies [{:?his (->TemperatureHistory [50 40 30 20])}])
                (frequencies temp-his-res)
-               (frequencies r-temp-his-res)))
+               (frequencies r-temp-his-res)
+               (frequencies ro-temp-his-res)))
 
         (is (= (frequencies [{:?tut (dr/->TempsUnderThreshold [temp40 temp30 temp20])}])
                (frequencies temps-under-thresh-res)
-               (frequencies r-temps-under-thresh-res))))
+               (frequencies r-temps-under-thresh-res)
+               (frequencies ro-temps-under-thresh-res))))
 
       (testing "metadata is preserved on rulebase nodes"
         (let [node-with-meta (->> s
@@ -309,10 +336,10 @@
 
 (defn rb-serde
   [s deserialize-opts]
-  (with-open [baos (java.io.ByteArrayOutputStream.)]
+  (with-open [baos (ByteArrayOutputStream.)]
     (d/serialize-rulebase s (df/create-session-serializer baos))
     (let [rb-data (.toByteArray baos)]
-      (with-open [bais (java.io.ByteArrayInputStream. rb-data)]
+      (with-open [bais (ByteArrayInputStream. rb-data)]
         (if deserialize-opts
           (d/deserialize-rulebase (df/create-session-serializer bais) deserialize-opts)
           (d/deserialize-rulebase (df/create-session-serializer bais)))))))

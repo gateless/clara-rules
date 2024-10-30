@@ -2521,9 +2521,11 @@
   (let [session (-> (mk-session (rules-data/weather-rules-with-keyword-names))
                     (insert (->Temperature 15 "MCI"))
                     (insert (->WindSpeed 45 "MCI"))
-                    (fire-rules))]
+                    (fire-rules))
+        read-only-session (eng/as-read-only session)]
     (is (= [{:?fact (->ColdAndWindy 15 45)}]
-           (query session ::rules-data/find-cold-and-windy-data)))))
+           (query session ::rules-data/find-cold-and-windy-data)
+           (query read-only-session ::rules-data/find-cold-and-windy-data)))))
 
 ;;; Verify that an exception is thrown when a duplicate name is encountered.
 ;;; Note we create the session with com/mk-session*, as com/mk-session allows

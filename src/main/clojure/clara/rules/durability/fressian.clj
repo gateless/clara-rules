@@ -61,6 +61,12 @@
 (def ^:private ^Map class->factory-fn-sym (java.util.Collections/synchronizedMap
                                            (WeakHashMap.)))
 
+;; This private var is used during deserialization of a rulebase or rules-session
+;; when the :read-only? option is passed, then it is bound to the *read-only* var,
+;; and the the read handlers use this value to check if the expression fns should be added.
+;; when *read-only* is false, the expre fns are added, when it is true they are excluded.
+(def ^:private ^:dynamic *read-only* false)
+
 (defn record-map-constructor-name
   "Return the 'map->' prefix, factory constructor function for a Clojure record."
   [rec]
@@ -142,7 +148,8 @@
          m (read-meta rdr)]
      (cond-> (builder build-map)
        m (with-meta m)
-       add-fn add-fn))))
+       (and add-fn
+            (not *read-only*)) add-fn))))
 
 (defn- create-cached-node-handler
   ([clazz
@@ -424,7 +431,7 @@
    (create-cached-node-handler ProductionNode
                                "clara/productionnode"
                                "clara/productionnodeid"
-                               #(assoc % :rhs nil)
+                               d/rem-rhs-fn
                                d/add-rhs-fn)
 
    "clara/querynode"
@@ -436,7 +443,7 @@
    (create-cached-node-handler AlphaNode
                                "clara/alphanodeid"
                                "clara/alphanode"
-                               #(assoc % :activation nil)
+                               d/rem-alpha-fn
                                d/add-alpha-fn)
 
    "clara/rootjoinnode"
@@ -453,7 +460,7 @@
    (create-cached-node-handler ExpressionJoinNode
                                "clara/exprjoinnode"
                                "clara/exprjoinnodeid"
-                               #(assoc % :join-filter-fn nil)
+                               d/rem-join-filter-fn
                                d/add-join-filter-fn)
 
    "clara/negationnode"
@@ -465,28 +472,28 @@
    (create-cached-node-handler NegationWithJoinFilterNode
                                "clara/negationwjoinnode"
                                "clara/negationwjoinnodeid"
-                               #(assoc % :join-filter-fn nil)
+                               d/rem-join-filter-fn
                                d/add-join-filter-fn)
 
    "clara/testnode"
    (create-cached-node-handler TestNode
                                "clara/testnode"
                                "clara/testnodeid"
-                               #(assoc % :test nil)
+                               d/rem-test-fn
                                d/add-test-fn)
 
    "clara/accumnode"
    (create-cached-node-handler AccumulateNode
                                "clara/accumnode"
                                "clara/accumnodeid"
-                               #(assoc % :accumulator nil)
+                               d/rem-accumulator
                                d/add-accumulator)
 
    "clara/accumwjoinnode"
    (create-cached-node-handler AccumulateWithJoinFilterNode
                                "clara/accumwjoinnode"
                                "clara/accumwjoinnodeid"
-                               #(assoc % :accumulator nil :join-filter-fn nil)
+                               (comp d/rem-accumulator d/rem-join-filter-fn)
                                (comp d/add-accumulator d/add-join-filter-fn))
 
    "clara/ruleorderactivation"
@@ -573,9 +580,10 @@
           (fn [sources]
             (with-open [^FressianWriter wtr
                         (fres/create-writer out-stream :handlers write-handler-lookup)]
-              (pform/thread-local-binding [d/node-id->node-cache (volatile! {})
-                                           d/clj-struct-holder record-holder]
-                                          (doseq [s sources] (fres/write-object wtr s)))))]
+              (pform/with-thread-local-binding [d/node-id->node-cache (volatile! {})
+                                                d/clj-struct-holder record-holder]
+                (doseq [s sources]
+                  (fres/write-object wtr s)))))]
 
       ;; In this case there is nothing to do with memory, so just serialize immediately.
       (if (:rulebase-only? opts)
@@ -601,8 +609,9 @@
   (deserialize [_ mem-facts opts]
 
     (with-open [^FressianReader rdr (fres/create-reader in-stream :handlers read-handler-lookup)]
-      (let [{:keys [rulebase-only?
-                    base-rulebase]} opts
+      (let [{:keys [base-rulebase
+                    rulebase-only?
+                    read-only?]} opts
 
             record-holder (ArrayList.)
             ;; The rulebase should either be given from the base-session or found in
@@ -621,27 +630,29 @@
             rulebase (if maybe-base-rulebase
                        maybe-base-rulebase
                        (let [without-opts-rulebase
-                             (pform/thread-local-binding [d/node-id->node-cache (volatile! {})
-                                                          d/clj-struct-holder record-holder]
-                                                         (pform/thread-local-binding [d/node-fn-cache (-> (fres/read-object rdr)
-                                                                                                          reconstruct-expressions
-                                                                                                          (com/compile-exprs opts))]
-                                                                                     (assoc (fres/read-object rdr)
-                                                                                            :node-expr-fn-lookup
-                                                                                            (.get d/node-fn-cache))))]
-                         (d/rulebase->rulebase-with-opts without-opts-rulebase opts)))]
-
+                             (pform/with-thread-local-binding [d/node-id->node-cache (volatile! {})
+                                                               d/clj-struct-holder record-holder]
+                               (pform/with-thread-local-binding [d/node-fn-cache (-> (fres/read-object rdr)
+                                                                                     (reconstruct-expressions)
+                                                                                     (cond->
+                                                                                      (not read-only?) (com/compile-exprs opts)))]
+                                 (binding [*read-only* read-only?]
+                                   (assoc (fres/read-object rdr)
+                                          :node-expr-fn-lookup
+                                          (.get d/node-fn-cache)))))]
+                         (if read-only?
+                           (eng/rulebase->query-only-rulebase without-opts-rulebase)
+                           (d/rulebase->rulebase-with-opts without-opts-rulebase opts))))]
         (if rulebase-only?
           rulebase
-          (d/assemble-restored-session rulebase
-                                       (pform/thread-local-binding [d/clj-struct-holder record-holder
-                                                                    d/mem-facts mem-facts]
-                                                                   ;; internal memory contains facts provided by mem-facts
-                                                                   ;; thus mem-facts must be bound before the call to read
-                                                                   ;; the internal memory
-                                                                   (pform/thread-local-binding [d/mem-internal (fres/read-object rdr)]
-                                                                                               (fres/read-object rdr)))
-                                       opts))))))
+          (let [memory (pform/with-thread-local-binding [d/clj-struct-holder record-holder
+                                                         d/mem-facts mem-facts]
+                         ;; internal memory contains facts provided by mem-facts
+                         ;; thus mem-facts must be bound before the call to read
+                         ;; the internal memory
+                         (pform/with-thread-local-binding [d/mem-internal (fres/read-object rdr)]
+                           (fres/read-object rdr)))]
+            (d/assemble-restored-session rulebase memory opts)))))))
 
 (s/defn create-session-serializer
   "Creates an instance of FressianSessionSerializer which implements d/ISessionSerializer by using

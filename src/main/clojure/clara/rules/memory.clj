@@ -33,6 +33,9 @@
   ;; Returns the tokens associated with the given node.
   (get-tokens [memory node bindings])
 
+  ;; Returns a map of all the bindings to tokens associated with the given node.
+  (get-tokens-map [memory node])
+
   ;; Returns all tokens associated with the given node, regardless of bindings
   (get-tokens-all [memory node])
 
@@ -480,6 +483,9 @@
          bindings
          []))
 
+  (get-tokens-map [memory node]
+    (get beta-memory (:id node) {}))
+
   (get-tokens-all [memory node]
     (sequence
      cat
@@ -834,6 +840,9 @@
     (get (get beta-memory (:id node) {})
          bindings
          []))
+
+  (get-tokens-map [memory node]
+    (get beta-memory (:id node) {}))
 
   (get-tokens-all [memory node]
     (sequence

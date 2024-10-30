@@ -1,6 +1,15 @@
 This is a history of changes to k13labs/clara-rules.
 
-# 1.4.1
+# 1.4.3
+* add support for read only rules sessions, ReadOnlyLocalSession, which can only be queried.
+* make clara.rules.compiler/create-get-alphas-fn public, simplify usage.
+* add output schema to clara.rules.compiled/build-network, validation.
+* add functions rulebase->query-only-rulebase, as-read-only, and assemble-read-only in the rules-engine ns.
+* add get-tokens-map to the IMemoryReader protocol to aid in fetching the memory state of entire nodes without bindings.
+* rename the rules.platform macro `thread-local-binding` to `with-thread-local-binding`, consider replace with binding.
+* add djblue/portal to dev profile.
+
+# 1.4.2
 * update k13labs/futurama to latest version
 
 # 1.4.1

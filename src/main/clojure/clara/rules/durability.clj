@@ -40,19 +40,34 @@
 (defn add-rhs-fn [node]
   (add-node-fn node :rhs :action-expr))
 
+(defn rem-rhs-fn [node]
+  (assoc node :rhs nil))
+
 (defn add-alpha-fn [node]
   (add-node-fn node :activation :alpha-expr))
+
+(defn rem-alpha-fn [node]
+  (assoc node :activation nil))
 
 (defn add-join-filter-fn [node]
   (add-node-fn node :join-filter-fn :join-filter-expr))
 
+(defn rem-join-filter-fn [node]
+  (assoc node :join-filter-fn nil))
+
 (defn add-test-fn [node]
   (add-node-fn node :test :test-expr))
+
+(defn rem-test-fn [node]
+  (assoc node :test nil))
 
 (defn add-accumulator [node]
   (assoc node
          :accumulator ((first (get (.get node-fn-cache) [(:id node) :accum-expr]))
                        (:env node))))
+
+(defn rem-accumulator [node]
+  (assoc node :accumulator nil))
 
 (defn node-id->node
   "Lookup the node for the given node-id in the node-id->node-cache cache."
@@ -462,14 +477,12 @@
                 :activation-group-fn nil
                 :alphas-fn nil))))
 
-(def ^:private create-get-alphas-fn @#'com/create-get-alphas-fn)
-
 (defn opts->get-alphas-fn [rulebase opts]
   (let [fact-type-fn (:fact-type-fn opts type)
         ancestors-fn (com/create-ancestors-fn opts)]
-    (create-get-alphas-fn fact-type-fn
-                          ancestors-fn
-                          (:alpha-roots rulebase))))
+    (com/create-get-alphas-fn fact-type-fn
+                              ancestors-fn
+                              (:alpha-roots rulebase))))
 
 (defn assemble-restored-session
   "Builds a Clara session from the given rulebase and memory components.  When no memory is given a new 
@@ -483,32 +496,38 @@
    Note!  Currently this only supports the clara.rules.memory.PersistentLocalMemory implementation
           of memory."
   ([rulebase opts]
-   (let [{:keys [listeners transport]} opts]
-
-     (eng/assemble {:rulebase rulebase
-                    :memory (eng/local-memory rulebase
-                                              (clara.rules.engine.LocalTransport.)
-                                              (:activation-group-sort-fn rulebase)
-                                              (:activation-group-fn rulebase)
-                                              ;; TODO: Memory doesn't seem to ever need this or use
-                                              ;; it.  Can we just remove it from memory?
-                                              (:get-alphas-fn rulebase))
-                    :transport (or transport (clara.rules.engine.LocalTransport.))
-                    :listeners (or listeners [])
-                    :get-alphas-fn (:get-alphas-fn rulebase)})))
+   (let [{:keys [listeners transport read-only?]} opts
+         memory (eng/local-memory rulebase
+                                  (clara.rules.engine.LocalTransport.)
+                                  (:activation-group-sort-fn rulebase)
+                                  (:activation-group-fn rulebase)
+                                  ;; TODO: Memory doesn't seem to ever need this or use
+                                  ;; it.  Can we just remove it from memory?
+                                  (:get-alphas-fn rulebase))]
+     (if read-only?
+       (eng/assemble-read-only {:rulebase rulebase
+                                :memory memory})
+       (eng/assemble {:rulebase rulebase
+                      :memory memory
+                      :transport (or transport (clara.rules.engine.LocalTransport.))
+                      :listeners (or listeners [])
+                      :get-alphas-fn (:get-alphas-fn rulebase)}))))
 
   ([rulebase memory opts]
-   (let [{:keys [listeners transport]} opts]
-
-     (eng/assemble {:rulebase rulebase
-                    :memory (assoc memory
-                                   :rulebase rulebase
-                                   :activation-group-sort-fn (:activation-group-sort-fn rulebase)
-                                   :activation-group-fn (:activation-group-fn rulebase)
-                                   :alphas-fn (:get-alphas-fn rulebase))
-                    :transport (or transport (clara.rules.engine.LocalTransport.))
-                    :listeners (or listeners [])
-                    :get-alphas-fn (:get-alphas-fn rulebase)}))))
+   (let [{:keys [listeners transport read-only?]} opts
+         memory (assoc memory
+                       :rulebase rulebase
+                       :activation-group-sort-fn (:activation-group-sort-fn rulebase)
+                       :activation-group-fn (:activation-group-fn rulebase)
+                       :alphas-fn (:get-alphas-fn rulebase))]
+     (if read-only?
+       (eng/assemble-read-only {:rulebase rulebase
+                                :memory memory})
+       (eng/assemble {:rulebase rulebase
+                      :memory memory
+                      :transport (or transport (clara.rules.engine.LocalTransport.))
+                      :listeners (or listeners [])
+                      :get-alphas-fn (:get-alphas-fn rulebase)})))))
 
 (defn rulebase->rulebase-with-opts
   "Intended for use in rulebase deserialization implementations where these functions were stripped

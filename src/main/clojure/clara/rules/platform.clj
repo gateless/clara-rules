@@ -82,7 +82,7 @@
           (recur (conj! coll [(.wrapped ^JavaEqualityWrapper (.getKey e)) (persistent! (.getValue e))])))
         (persistent! coll)))))
 
-(defmacro thread-local-binding
+(defmacro with-thread-local-binding
   "Wraps given body in a try block, where it sets each given ThreadLocal binding
   and removes it in finally block."
   [bindings & body]
