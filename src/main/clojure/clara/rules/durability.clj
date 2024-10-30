@@ -557,6 +557,11 @@
      serialized, but all having a common rulebase.  Storing the rulebase only, will likely save both
      space and time in these scenarios.
 
+   * :read-only? - When true indicates the rulebase or session should be deserialized in read-only mode,
+     meaning only queries are allowed, this session can be queried like any other session but rules can
+     no longer be fired, facts cannot be inserted nor retracted. This session will only contain query nodes
+     and query beta memory.
+
    * :with-rulebase? - When true the rulebase is included in the serialized state of the session.  
      The *default* behavior is false when serializing a session via the serialize-session-state function.
 
