@@ -1882,7 +1882,7 @@
   [fact-type roots]
   (AlphaRootsWrapper. (jeq-wrap fact-type) roots))
 
-(defn- create-get-alphas-fn
+(defn create-get-alphas-fn
   "Returns a function that given a sequence of facts,
   returns a map associating alpha nodes with the facts they accept."
   [fact-type-fn ancestors-fn alpha-roots]
@@ -1968,7 +1968,7 @@
       (comp (partial apply set/union) (juxt ancestors-fn hierarchy-fn))
       (or ancestors-fn hierarchy-fn ancestors))))
 
-(sc/defn build-network
+(sc/defn build-network :- Rulebase
   "Constructs the network from compiled beta tree and condition functions."
   [id-to-node :- schema/MutableLongHashMap
    beta-roots

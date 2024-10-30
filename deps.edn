@@ -19,6 +19,7 @@
                      org.slf4j/slf4j-api {:mvn/version "2.0.16"}
                      org.slf4j/slf4j-simple {:mvn/version "2.0.16"}
                      org.clojure/math.combinatorics {:mvn/version "0.3.0"}
+                     djblue/portal {:mvn/version "0.58.2"}
                      criterium/criterium {:mvn/version "0.4.6"}}}
 
   :app {:extra-paths ["app"]

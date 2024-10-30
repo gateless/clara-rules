@@ -2141,20 +2141,24 @@
                   get-alphas-fn
                   []))
 
+(defn- throw-unsupported-read-only-operation
+  [op]
+  (throw (UnsupportedOperationException. (format "%s: this session is read-only" op))))
+
 (deftype ReadOnlyLocalSession [rulebase memory]
   ISession
   (insert [session facts]
-    (throw (UnsupportedOperationException. "this session is read-only")))
+    (throw-unsupported-read-only-operation "insert"))
   (retract [session facts]
-    (throw (UnsupportedOperationException. "this session is read-only")))
+    (throw-unsupported-read-only-operation "retract"))
   (fire-rules [session]
-    (throw (UnsupportedOperationException. "this session is read-only")))
+    (throw-unsupported-read-only-operation "fire-rules"))
   (fire-rules [session opts]
-    (throw (UnsupportedOperationException. "this session is read-only")))
+    (throw-unsupported-read-only-operation "fire-rules"))
   (fire-rules-async [session]
-    (throw (UnsupportedOperationException. "this session is read-only")))
+    (throw-unsupported-read-only-operation "fire-rules-async"))
   (fire-rules-async [session opts]
-    (throw (UnsupportedOperationException. "this session is read-only")))
+    (throw-unsupported-read-only-operation "fire-rules-async"))
   (query [session query params]
     (query* rulebase memory query params))
 
@@ -2162,30 +2166,34 @@
     {:rulebase rulebase
      :memory memory}))
 
-(defn assemble-ready-only
+(defn rulebase->query-only-rulebase
+  "Construcs a read only network from a rulebase, the read only network only contains query nodes"
+  [rulebase]
+  (assoc rulebase
+         :alpha-roots {}
+         :beta-roots []
+         :productions #{}
+         :production-nodes []
+         :id-to-node {}
+         :activation-group-sort-fn nil
+         :activation-group-fn nil
+         :get-alphas-fn nil
+         :node-expr-fn-lookup {}))
+
+(defn assemble-read-only
   [{:keys [rulebase memory]}]
   (let [{:keys [query-nodes]} rulebase
-        read-only-rulebase (assoc rulebase
-                                  :query-nodes query-nodes
-                                  :alpha-roots {}
-                                  :beta-roots []
-                                  :productions #{}
-                                  :production-nodes []
-                                  :id-to-node {}
-                                  :node-expr-fn-lookup {}
-                                  :activation-group-sort-fn nil
-                                  :activation-group-fn nil
-                                  :get-alphas-fn nil)
+        query-only-rulebase (rulebase->query-only-rulebase rulebase)
         query-node-set (set (vals query-nodes))
         query-beta-memory (into {}
                                 (for [query-node query-node-set]
                                   [(:id query-node) (mem/get-tokens-map memory query-node)]))
-        read-only-memory (mem/map->PersistentLocalMemory {:beta-memory query-beta-memory})]
-    (ReadOnlyLocalSession. read-only-rulebase read-only-memory)))
+        query-only-memory (mem/map->PersistentLocalMemory {:beta-memory query-beta-memory})]
+    (ReadOnlyLocalSession. query-only-rulebase query-only-memory)))
 
 (defn as-read-only
   [session]
-  (assemble-ready-only (components session)))
+  (assemble-read-only (components session)))
 
 (defn with-listener
   "Return a new session with the listener added to the provided session,
