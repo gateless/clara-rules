@@ -1,6 +1,6 @@
 This is a history of changes to k13labs/clara-rules.
 
-# 1.4.3-SNAPSHOT
+# 1.4.3
 * add support for read only rules sessions, ReadOnlyLocalSession, which can only be queried.
 * make clara.rules.compiler/create-get-alphas-fn public, simplify usage.
 * add output schema to clara.rules.compiled/build-network, validation.
