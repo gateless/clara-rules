@@ -2186,8 +2186,11 @@
         query-only-rulebase (rulebase->query-only-rulebase rulebase)
         query-node-set (set (vals query-nodes))
         query-beta-memory (into {}
-                                (for [query-node query-node-set]
-                                  [(:id query-node) (mem/get-tokens-map memory query-node)]))
+                                (for [query-node query-node-set
+                                      :let [node-id (:id query-node)
+                                            node-memory (mem/get-tokens-map memory query-node)]
+                                      :when (seq node-memory)]
+                                  [node-id node-memory]))
         query-only-memory (mem/map->PersistentLocalMemory {:beta-memory query-beta-memory})]
     (ReadOnlyLocalSession. query-only-rulebase query-only-memory)))
 
