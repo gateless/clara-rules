@@ -2135,11 +2135,11 @@
     :else nil))
 
 (defn load-source*
-  "loads the rules, queries and hierarchies from a source if it implements `IClaraSOurce`, or navigates inside
+  "loads the rules, queries and hierarchies from a source if it implements `IClaraSource`, or navigates inside
   collections to recursively load from vectors, lists, sets, seqs."
   [source]
   (cond
-    (u/instance-satisfies? IClaraSource source)
+    (satisfies? IClaraSource source)
     (load-source source)
 
     (or (vector? source)

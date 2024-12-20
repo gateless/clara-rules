@@ -1,5 +1,8 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.4.5
+* upgrade to latest futurama, replace uses of instance-satisfies? with satisfies?
+
 # 1.4.4
 * ensure read-only sessions do not contain empty beta memory for nodes without any bindings results (empty queries).
 
