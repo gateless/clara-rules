@@ -62,7 +62,7 @@ GNU Make is used to simplify invocation of some commands.
 
 Clara releases for this project are on [Clojars](https://clojars.org/). Simply add the following to your project:
 
-[![Clojars Project](http://clojars.org/com.github.k13labs/clara-rules/latest-version.svg)](http://clojars.org/com.github.k13labs/clara-rules)
+[![Clojars Project](https://clojars.org/com.github.k13labs/clara-rules/latest-version.svg)](http://clojars.org/com.github.k13labs/clara-rules)
 
 # _Communication_
 
