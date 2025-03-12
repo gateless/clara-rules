@@ -32,6 +32,21 @@
   ;; deserialization process does not lose important details for the next time serializing it.
   (-> x serde1 serde1))
 
+(defrecord MyRecord1 [n])
+(defrecord MyRecord2 [n])
+(defrecord MyRecord3 [n])
+(defrecord MyRecord4 [n])
+(defrecord MyRecord5 [n])
+
+(def records
+  (into [] cat
+        (for [n (range 1e6)]
+          [(MyRecord1. n) (MyRecord2. n) (MyRecord3. n) (MyRecord4. n) (MyRecord5. n)])))
+
+(deftest serde-records
+  (println "serializing 1e6 sets of 5 records each:")
+  (time (do (run! serde records) nil)))
+
 (defn test-serde [expected x]
   (is (= expected (serde x))))
 
