@@ -9,7 +9,6 @@
             [clara.rules.update-cache.cancelling :as ca]
             [futurama.core :refer [async
                                    async?
-                                   async-future
                                    async-cancelled?
                                    <!
                                    <!*
@@ -1794,6 +1793,12 @@
                             listener-exception))}
             exception))))
 
+(defn- handle-fire-activation-exception
+  [activation e]
+  (if (async-cancelled?)
+    (throw e)
+    (throw-activation-exception activation e)))
+
 (defn- fire-activation!
   "Fire the rule's RHS represented by the activation node,
   if an activation returns an async result then it is handled
@@ -1810,7 +1815,7 @@
           (->activation-output activation (!<!! result))
           (->activation-output activation result)))
       (catch Exception e
-        (throw-activation-exception activation e)))))
+        (handle-fire-activation-exception activation e)))))
 
 (defn- fire-activation-async!
   "Fire the rule's RHS represented by the activation node,
@@ -1829,10 +1834,10 @@
            (try
              (->activation-output activation (!<! result))
              (catch Exception e
-               (throw-activation-exception activation e))))
+               (handle-fire-activation-exception activation e))))
           (CompletableFuture/completedFuture (->activation-output activation result))))
       (catch Exception e
-        (throw-activation-exception activation e)))))
+        (handle-fire-activation-exception activation e)))))
 
 (defn- ->activation-rule-context
   "Use vectors for the insertion caches so that within an insertion type
@@ -2092,7 +2097,7 @@
   (fire-rules-async [session]
     (fire-rules-async session {}))
   (fire-rules-async [session opts]
-    (async-future
+    (async
      (let [transient-memory (mem/to-transient memory)
            transient-listener (l/to-transient listener)]
        (<! (fire-rules*
