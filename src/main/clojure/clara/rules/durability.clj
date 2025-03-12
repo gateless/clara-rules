@@ -21,21 +21,21 @@
 ;;;; Rulebase serialization helpers.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:internal ^ThreadLocal node-id->node-cache
+(def ^:internal ^:dynamic *node-id->node-cache*
   "Useful for caching rulebase network nodes by id during serialization and deserialization to
    avoid creating multiple object instances for the same node."
-  (ThreadLocal.))
+  nil)
 
-(def ^:internal ^ThreadLocal node-fn-cache
+(def ^:internal ^:dynamic *node-fn-cache*
   "A cache for holding the fns used to reconstruct the nodes. Only applicable during read time, specifically
    this will be bound to a Map of [<node-id> <field-name>] to IFn before the rulebase is deserialized. While the
    rulebase is deserialized the nodes will reference this cache to repopulate their fns."
-  (ThreadLocal.))
+  nil)
 
 (defn- add-node-fn [node fn-key expr-key]
   (assoc node
          fn-key
-         (first (get (.get node-fn-cache) [(:id node) expr-key]))))
+         (first (get *node-fn-cache* [(:id node) expr-key]))))
 
 (defn add-rhs-fn [node]
   (add-node-fn node :rhs :action-expr))
@@ -63,7 +63,7 @@
 
 (defn add-accumulator [node]
   (assoc node
-         :accumulator ((first (get (.get node-fn-cache) [(:id node) :accum-expr]))
+         :accumulator ((first (get *node-fn-cache* [(:id node) :accum-expr]))
                        (:env node))))
 
 (defn rem-accumulator [node]
@@ -72,28 +72,27 @@
 (defn node-id->node
   "Lookup the node for the given node-id in the node-id->node-cache cache."
   [node-id]
-  (@(.get node-id->node-cache) node-id))
+  (get @*node-id->node-cache* node-id))
 
 (defn cache-node
   "Cache the node in the node-id->node-cache.  Returns the node."
   [node]
   (when-let [node-id (:id node)]
-    (vswap! (.get node-id->node-cache) assoc node-id node))
+    (vswap! *node-id->node-cache* assoc node-id node))
   node)
 
-(def ^:internal ^ThreadLocal clj-struct-holder
+(def ^:internal ^:dynamic *clj-struct-holder*
   "A cache for writing and reading Clojure records.  At write time, an IdentityHashMap can be
    used to keep track of repeated references to the same object instance occurring in
    the serialization stream.  At read time, a plain ArrayList (mutable and indexed for speed)
    can be used to add records to when they are first seen, then look up repeated occurrences
    of references to the same record instance later."
-  (ThreadLocal.))
+  nil)
 
 (defn clj-struct->idx
   "Gets the numeric index for the given struct from the clj-struct-holder."
   [fact]
-  (-> clj-struct-holder
-      ^Map (.get)
+  (-> ^Map *clj-struct-holder*
       (.get fact)))
 
 (defn clj-struct-holder-add-fact-idx!
@@ -104,26 +103,22 @@
   ;; will be read later as longs and both will be compatible with the index lookup
   ;; at read-time.  This could have a cast to long here, but it would waste time
   ;; unnecessarily.
-  (-> clj-struct-holder
-      ^Map (.get)
-      (.put fact (-> clj-struct-holder
-                     ^Map (.get)
+  (-> ^Map *clj-struct-holder*
+      (.put fact (-> ^Map *clj-struct-holder*
                      (.size)))))
 
 (defn clj-struct-idx->obj
   "The reverse of clj-struct->idx.  Returns an object for the given index found
    in clj-struct-holder."
   [id]
-  (-> clj-struct-holder
-      ^List (.get)
+  (-> ^List *clj-struct-holder*
       (.get id)))
 
 (defn clj-struct-holder-add-obj!
   "The reverse of clj-struct-holder-add-fact-idx!.  Adds the object to the clj-struct-holder
    at the next available index."
   [fact]
-  (-> clj-struct-holder
-      ^List (.get)
+  (-> ^List *clj-struct-holder*
       (.add fact))
   fact)
 
@@ -356,31 +351,29 @@
 ;;;; Commonly useful session serialization helpers.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:internal ^ThreadLocal ^List mem-facts
-  "Useful for ISessionSerializer implementors to have a reference to the facts deserialized via 
+(def ^:internal ^:dynamic ^List *mem-facts*
+  "Useful for ISessionSerializer implementors to have a reference to the facts deserialized via
    IWorkingMemorySerializer that are needed to restore working memory whose locations were stubbed
    with a MemIdx during serialization."
-  (ThreadLocal.))
+  nil)
 
-(def ^:internal ^ThreadLocal ^List mem-internal
+(def ^:internal ^:dynamic ^List *mem-internal*
   "Useful for ISessionSerializer implementors to have a reference to the facts deserialized via
    IWorkingMemorySerializer that are needed to restore working memory whose locations were stubbed
    with a InternalMemIdx during serialization. These objects are specific to the Clare engine,
    and as such will be serialized and deserialized along with the memory."
-  (ThreadLocal.))
+  nil)
 
 (defn find-mem-idx
   "Finds the fact from mem-facts at the given index. See docs on mem-facts for more."
   [idx]
-  (-> mem-facts
-      (.get)
+  (-> *mem-facts*
       (get idx)))
 
 (defn find-internal-idx
   "Finds the fact from mem-internal at the given index. See docs on mem-internal for more."
   [idx]
-  (-> mem-internal
-      (.get)
+  (-> *mem-internal*
       (get idx)))
 
 (defn indexed-session-memory-state
