@@ -1,5 +1,9 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.5.0
+* revert thread local use and replace with dynamic vars for safely using virtual threads.
+* upgrade deps, update infinite loop tests with latest futurama library.
+
 # 1.4.5
 * upgrade to latest futurama, replace uses of instance-satisfies? with satisfies?
 
