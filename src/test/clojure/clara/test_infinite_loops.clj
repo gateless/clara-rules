@@ -34,9 +34,9 @@
             result-f (-> (mk-session [cold-rule] :cache false)
                          (insert (->Cold nil))
                          (fire-rules-async))]
-        (when-not (deref result-f 10 nil)
-          (async-cancel! result-f))
-        (is (thrown? CancellationException (!<!! result-f)))))
+        (Thread/sleep 10)
+        (async-cancel! result-f)
+        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))
     (testing "fire async - async rule"
       (let [counter (atom 0)
             cold-rule (dsl/parse-rule [[Cold]]
@@ -47,22 +47,22 @@
             result-f (-> (mk-session [cold-rule] :cache false)
                          (insert (->Cold nil))
                          (fire-rules-async))]
-        (when-not (deref result-f 10 nil)
-          (async-cancel! result-f))
-        (is (thrown? CancellationException (!<!! result-f)))))
+        (Thread/sleep 10)
+        (async-cancel! result-f)
+        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))
     (testing "fire sync - sync rule"
       (let [counter (atom 0)
             cold-rule (dsl/parse-rule [[Cold]]
                                       (do
                                         (println (format "inserting %s" (swap! counter inc)))
                                         (insert! (->Cold nil))))
-            result-f (future
-                       (-> (mk-session [cold-rule] :cache false)
-                           (insert (->Cold nil))
-                           (fire-rules)))]
-        (when-not (deref result-f 10 nil)
-          (async-cancel! result-f))
-        (is (thrown? CancellationException (!<!! result-f)))))
+            result-f (async
+                      (-> (mk-session [cold-rule] :cache false)
+                          (insert (->Cold nil))
+                          (fire-rules)))]
+        (Thread/sleep 10)
+        (async-cancel! result-f)
+        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))
     (testing "fire sync - async rule"
       (let [counter (atom 0)
             cold-rule (dsl/parse-rule [[Cold]]
@@ -70,13 +70,13 @@
                                        (println (format "inserting %s" (swap! counter inc)))
                                        (!<! (timeout 1))
                                        (insert! (->Cold nil))))
-            result-f (future
-                       (-> (mk-session [cold-rule] :cache false)
-                           (insert (->Cold nil))
-                           (fire-rules)))]
-        (when-not (deref result-f 10 nil)
-          (async-cancel! result-f))
-        (is (thrown? CancellationException (!<!! result-f)))))))
+            result-f (async
+                      (-> (mk-session [cold-rule] :cache false)
+                          (insert (->Cold nil))
+                          (fire-rules)))]
+        (Thread/sleep 10)
+        (async-cancel! result-f)
+        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))))
 
 (def-rules-test test-standard-out-warning
 

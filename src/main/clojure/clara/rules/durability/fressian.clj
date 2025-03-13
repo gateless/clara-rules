@@ -7,10 +7,8 @@
             [clara.rules.memory :as mem]
             [clara.rules.engine :as eng]
             [clara.rules.compiler :as com]
-            [clara.rules.platform :as pform]
             [schema.core :as s]
             [clojure.data.fressian :as fres]
-            [clojure.java.io :as jio]
             [clojure.main :as cm]
             [ham-fisted.api :as hf]
             [ham-fisted.set :as hs])
@@ -159,7 +157,7 @@
     :writer (reify WriteHandler
               (write [_ w o]
                 (let [node-id (:id o)]
-                  (if (@(.get d/node-id->node-cache) node-id)
+                  (if (get @d/*node-id->node-cache* node-id)
                     (do
                       (.writeTag w tag-for-cached 1)
                       (.writeInt w node-id))
@@ -185,7 +183,7 @@
     :writer (reify WriteHandler
               (write [_ w o]
                 (let [node-id (:id o)]
-                  (if (@(.get d/node-id->node-cache) node-id)
+                  (if (get @d/*node-id->node-cache* node-id)
                     (do
                       (.writeTag w tag-for-cached 1)
                       (.writeInt w node-id))
@@ -580,8 +578,8 @@
           (fn [sources]
             (with-open [^FressianWriter wtr
                         (fres/create-writer out-stream :handlers write-handler-lookup)]
-              (pform/with-thread-local-binding [d/node-id->node-cache (volatile! {})
-                                                d/clj-struct-holder record-holder]
+              (binding [d/*node-id->node-cache* (atom {})
+                        d/*clj-struct-holder* record-holder]
                 (doseq [s sources]
                   (fres/write-object wtr s)))))]
 
@@ -630,27 +628,27 @@
             rulebase (if maybe-base-rulebase
                        maybe-base-rulebase
                        (let [without-opts-rulebase
-                             (pform/with-thread-local-binding [d/node-id->node-cache (volatile! {})
-                                                               d/clj-struct-holder record-holder]
-                               (pform/with-thread-local-binding [d/node-fn-cache (-> (fres/read-object rdr)
-                                                                                     (reconstruct-expressions)
-                                                                                     (cond->
-                                                                                      (not read-only?) (com/compile-exprs opts)))]
-                                 (binding [*read-only* read-only?]
-                                   (assoc (fres/read-object rdr)
-                                          :node-expr-fn-lookup
-                                          (.get d/node-fn-cache)))))]
+                             (binding [d/*node-id->node-cache* (atom {})
+                                       d/*clj-struct-holder* record-holder]
+                               (binding [d/*node-fn-cache* (-> (fres/read-object rdr)
+                                                               (reconstruct-expressions)
+                                                               (cond->
+                                                                (not read-only?) (com/compile-exprs opts)))
+                                         *read-only* read-only?]
+                                 (assoc (fres/read-object rdr)
+                                        :node-expr-fn-lookup
+                                        d/*node-fn-cache*)))]
                          (if read-only?
                            (eng/rulebase->query-only-rulebase without-opts-rulebase)
                            (d/rulebase->rulebase-with-opts without-opts-rulebase opts))))]
         (if rulebase-only?
           rulebase
-          (let [memory (pform/with-thread-local-binding [d/clj-struct-holder record-holder
-                                                         d/mem-facts mem-facts]
+          (let [memory (binding [d/*clj-struct-holder* record-holder
+                                 d/*mem-facts* mem-facts]
                          ;; internal memory contains facts provided by mem-facts
                          ;; thus mem-facts must be bound before the call to read
                          ;; the internal memory
-                         (pform/with-thread-local-binding [d/mem-internal (fres/read-object rdr)]
+                         (binding [d/*mem-internal* (fres/read-object rdr)]
                            (fres/read-object rdr)))]
             (d/assemble-restored-session rulebase memory opts)))))))
 

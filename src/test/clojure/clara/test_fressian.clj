@@ -17,12 +17,12 @@
   (with-open [os (java.io.ByteArrayOutputStream.)
               ^FressianWriter wtr (fres/create-writer os :handlers df/write-handler-lookup)]
     ;; Write
-    (pform/with-thread-local-binding [d/node-id->node-cache (volatile! {})
-                                      d/clj-struct-holder (java.util.IdentityHashMap.)]
+    (binding [d/*node-id->node-cache* (atom {})
+              d/*clj-struct-holder* (java.util.IdentityHashMap.)]
       (fres/write-object wtr x))
     ;; Read
     (let [data (.toByteArray os)]
-      (pform/with-thread-local-binding [d/clj-struct-holder (java.util.ArrayList.)]
+      (binding [d/*clj-struct-holder* (java.util.ArrayList.)]
         (with-open [is (java.io.ByteArrayInputStream. data)
                     ^FressianReader rdr (fres/create-reader is :handlers df/read-handler-lookup)]
           (fres/read-object rdr))))))
@@ -31,6 +31,20 @@
   ;; Tests all serialization cases in a way that SerDe's 2 times to show that the serialization to
   ;; deserialization process does not lose important details for the next time serializing it.
   (-> x serde1 serde1))
+
+(comment
+  (defrecord MyRecord1 [n])
+  (defrecord MyRecord2 [n])
+  (defrecord MyRecord3 [n])
+  (defrecord MyRecord4 [n])
+  (defrecord MyRecord5 [n])
+
+  (def records
+    (into [] cat
+          (for [n (range 1e6)]
+            [(MyRecord1. n) (MyRecord2. n) (MyRecord3. n) (MyRecord4. n) (MyRecord5. n)])))
+
+  (time (do (serde records) nil)))
 
 (defn test-serde [expected x]
   (is (= expected (serde x))))

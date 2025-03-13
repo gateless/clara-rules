@@ -9,7 +9,6 @@
             [ham-fisted.api :as hf]
             [ham-fisted.set :as hs]
             [ham-fisted.mut-map :as hm]
-            [futurama.util :as u]
             [clojure.set :as set]
             [clojure.string :as string]
             [clojure.walk :as walk]
