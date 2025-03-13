@@ -578,7 +578,7 @@
           (fn [sources]
             (with-open [^FressianWriter wtr
                         (fres/create-writer out-stream :handlers write-handler-lookup)]
-              (binding [d/*node-id->node-cache* (volatile! {})
+              (binding [d/*node-id->node-cache* (atom {})
                         d/*clj-struct-holder* record-holder]
                 (doseq [s sources]
                   (fres/write-object wtr s)))))]
@@ -628,7 +628,7 @@
             rulebase (if maybe-base-rulebase
                        maybe-base-rulebase
                        (let [without-opts-rulebase
-                             (binding [d/*node-id->node-cache* (volatile! {})
+                             (binding [d/*node-id->node-cache* (atom {})
                                        d/*clj-struct-holder* record-holder]
                                (binding [d/*node-fn-cache* (-> (fres/read-object rdr)
                                                                (reconstruct-expressions)

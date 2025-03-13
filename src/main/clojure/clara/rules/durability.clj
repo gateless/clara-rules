@@ -78,7 +78,7 @@
   "Cache the node in the node-id->node-cache.  Returns the node."
   [node]
   (when-let [node-id (:id node)]
-    (vswap! *node-id->node-cache* assoc node-id node))
+    (swap! *node-id->node-cache* assoc node-id node))
   node)
 
 (def ^:internal ^:dynamic *clj-struct-holder*

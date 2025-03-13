@@ -17,7 +17,7 @@
   (with-open [os (java.io.ByteArrayOutputStream.)
               ^FressianWriter wtr (fres/create-writer os :handlers df/write-handler-lookup)]
     ;; Write
-    (binding [d/*node-id->node-cache* (volatile! {})
+    (binding [d/*node-id->node-cache* (atom {})
               d/*clj-struct-holder* (java.util.IdentityHashMap.)]
       (fres/write-object wtr x))
     ;; Read
@@ -41,7 +41,7 @@
 
   (def records
     (into [] cat
-          (for [n (range 1e3)]
+          (for [n (range 1e6)]
             [(MyRecord1. n) (MyRecord2. n) (MyRecord3. n) (MyRecord4. n) (MyRecord5. n)])))
 
   (time (do (serde records) nil)))
