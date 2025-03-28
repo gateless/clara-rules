@@ -1,5 +1,8 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.5.1
+* do not break inspection if no accumulated facts are found
+
 # 1.5.0
 * revert thread local use and replace with dynamic vars for safely using virtual threads.
 * upgrade deps, update infinite loop tests with latest futurama library.
