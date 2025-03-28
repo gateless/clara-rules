@@ -1381,8 +1381,11 @@
     ;; This being the case, we can use the downstream token to find out what binding key-value pairs were used
     ;; to create the token "stream" of which it is part.
     (let [join-bindings (-> token :bindings (select-keys (get-join-keys this)))
-          fact-bindings (-> token :bindings (select-keys new-bindings))]
-      (first (mem/get-accum-reduced memory this join-bindings (merge join-bindings fact-bindings))))))
+          fact-bindings (-> token :bindings (select-keys new-bindings))
+          accum-reduced (mem/get-accum-reduced memory this join-bindings (merge join-bindings fact-bindings))]
+      (if (not= accum-reduced ::mem/no-accum-reduced)
+        (first accum-reduced)
+        []))))
 
 (defn- filter-accum-facts
   "Run a filter on elements against a given token for constraints that are not simple hash joins."
