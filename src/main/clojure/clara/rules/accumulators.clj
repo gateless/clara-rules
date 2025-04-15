@@ -211,3 +211,40 @@
     {:initial-value []
      :reduce-fn (fn [items value] (conj items (field value)))
      :retract-fn (fn [items retracted] (drop-one-of items (field retracted)))})))
+
+(defn sorting-by
+  "Return a generic grouping accumulator. Behaves like clojure.core/sort-by.
+  * `sort-field` - required - The field of a fact to sort by.
+  * `comparator` - optional - The comparator for sort by, defaults to `clojure.core/compare`."
+  ([sort-field]
+   (sorting-by sort-field compare))
+  ([sort-field comparator]
+   (assoc (all) :convert-return-fn
+          (fn do-sort
+            [return-items]
+            (sort-by sort-field comparator return-items)))))
+
+(defn sorted-grouping-by
+  "Return a generic grouping accumulator. Behaves like clojure.core/group-by.
+  * `group-field` - required - The field of a fact to group facts by.
+  * `sort-field` - required - The field of a fact to sort facts by.
+  * `group-comparator` - optional - The comparator to compare sorted groups, defaults to `clojure.core/compare`.
+  * `sort-comparator` - optional - The comparator to compare sorted values, defaults to `clojure.core/compare`.
+  * `convert-return-fn` - optional - Converts the resulting grouped
+  data. Defaults to clojure.core/identity."
+  [group-field sort-field & {:keys [group-comparator
+                                    sort-comparator
+                                    convert-return-fn]
+                             :or {group-comparator compare
+                                  sort-comparator compare
+                                  convert-return-fn identity}}]
+  {:pre [(ifn? convert-return-fn)]}
+  (reduce-to-accum
+   (fn [m v]
+     (let [k (group-field v)]
+       (update m k grouping-fn v)))
+   {}
+   (comp convert-return-fn (fn [m]
+                             (into (sorted-map-by group-comparator)
+                                   (for [[k vs] m]
+                                     [k (sort-by sort-field sort-comparator vs)]))))))

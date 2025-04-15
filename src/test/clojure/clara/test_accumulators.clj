@@ -536,3 +536,195 @@
       (is (and (= (count (query session wind-query)) 1)
                (= [(->WindSpeed 75 "KCI")] wind-facts)
                (seq? wind-facts))))))
+
+(def-rules-test test-accum-sorting-by
+  {:queries [sorted-all [[] [[?t <- (acc/sorting-by :temperature) from [Temperature]]]]
+             sorted-all-desc [[] [[?t <- (acc/sorting-by :temperature >) :from [Temperature]]]]]
+
+   :sessions [empty-session [sorted-all sorted-all-desc] {}]}
+
+  (let [shuffled-facts (shuffle
+                        (for [temp (range 80 85)]
+                          (->Temperature temp "MCI")))
+        session (-> empty-session
+                    (insert-all shuffled-facts)
+                    fire-rules)
+
+        retracted (-> session
+                      (retract (->Temperature 81 "MCI")
+                               (->Temperature 82 "MCI"))
+                      fire-rules)
+
+        all-retracted (-> (apply retract session shuffled-facts)
+                          (fire-rules))]
+
+    ;; Ensure expected items are there. Ordering is guaranteed.
+    (is (= [{:?t (sort-by :temperature shuffled-facts)}]
+           (query session sorted-all)))
+
+    (is (= [{:?t (sort-by :temperature > shuffled-facts)}]
+           (query session sorted-all-desc)))
+
+    (is (= [{:?t (->> [(->Temperature 81 "MCI")
+                       (->Temperature 82 "MCI")]
+                      (apply disj (set shuffled-facts))
+                      (sort-by :temperature))}]
+           (query retracted sorted-all)))
+
+    (is (= [{:?t (->> [(->Temperature 81 "MCI")
+                       (->Temperature 82 "MCI")]
+                      (apply disj (set shuffled-facts))
+                      (sort-by :temperature >))}]
+           (query retracted sorted-all-desc)))
+
+    (is (= [{:?t []}]
+           (query all-retracted sorted-all)
+           (query all-retracted sorted-all-desc))
+        "Retracting all values should cause a return to the initial value of
+        an empty sequence.")))
+
+(def-rules-test test-accum-sorted-grouping-by
+  {:queries [sorted-grouping [[] [[?t <- (acc/sorted-grouping-by :location :temperature)
+                                   :from [Temperature]]]]
+
+             sorted-grouping-desc [[] [[?t <- (acc/sorted-grouping-by :location :temperature
+                                                                      :group-comparator #(compare %2 %1)
+                                                                      :sort-comparator >)
+                                        :from [Temperature]]]]
+             sorted-grouping-conv [[] [[?t <- (acc/sorted-grouping-by :location :temperature
+                                                                      :convert-return-fn vec)
+                                        :from [Temperature]]]]]
+
+   :sessions [empty-session [sorted-grouping sorted-grouping-desc sorted-grouping-conv] {}]}
+
+  (let [shuffled-facts (shuffle
+                        (concat
+                         (for [temp (range 80 85)]
+                           (->Temperature temp "MCI"))
+                         (for [temp (range 85 90)]
+                           (->Temperature temp "ORD"))
+                         (for [temp (range 90 95)]
+                           (->Temperature temp "TPA"))))
+        session (-> empty-session
+                    (insert-all shuffled-facts)
+                    fire-rules)
+
+        retracted-session (-> session
+                              (retract (->Temperature 80 "MCI")
+                                       (->Temperature 85 "ORD")
+                                       (->Temperature 90 "TPA"))
+                              fire-rules)
+        retracted-all-session (-> (apply retract session shuffled-facts)
+                                  fire-rules)]
+
+    (testing "sorted grouping-accum"
+      (testing "all facts"
+        (is (= [{:?t [["MCI" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "MCI")]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["ORD" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "ORD")]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["TPA" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "TPA")]
+                                    fact)
+                                  (sort-by :temperature))]]}]
+               (for [result (query session sorted-grouping)]
+                 (update result :?t vec)))))
+      (testing "retracted some facts"
+        (is (= [{:?t [["MCI" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "MCI")
+                                                   (> (:temperature fact) 80))]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["ORD" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "ORD")
+                                                   (> (:temperature fact) 85))]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["TPA" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "TPA")
+                                                   (> (:temperature fact) 90))]
+                                    fact)
+                                  (sort-by :temperature))]]}]
+               (for [result (query retracted-session sorted-grouping)]
+                 (update result :?t vec)))))
+      (testing "retracted all facts"
+        (is (= [{:?t {}}]
+               (query retracted-all-session sorted-grouping)))))
+
+    (testing "sorted grouping-accum desc"
+      (testing "all facts"
+        (is (= [{:?t [["TPA" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "TPA")]
+                                    fact)
+                                  (sort-by :temperature >))]
+                      ["ORD" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "ORD")]
+                                    fact)
+                                  (sort-by :temperature >))]
+                      ["MCI" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "MCI")]
+                                    fact)
+                                  (sort-by :temperature >))]]}]
+               (for [result (query session sorted-grouping-desc)]
+                 (update result :?t vec)))))
+      (testing "retracted some facts"
+        (is (= [{:?t [["TPA" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "TPA")
+                                                   (> (:temperature fact) 90))]
+                                    fact)
+                                  (sort-by :temperature >))]
+                      ["ORD" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "ORD")
+                                                   (> (:temperature fact) 85))]
+                                    fact)
+                                  (sort-by :temperature >))]
+                      ["MCI" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "MCI")
+                                                   (> (:temperature fact) 80))]
+                                    fact)
+                                  (sort-by :temperature >))]]}]
+               (for [result (query retracted-session sorted-grouping-desc)]
+                 (update result :?t vec)))))
+      (testing "retracted all facts"
+        (is (= [{:?t {}}]
+               (query retracted-all-session sorted-grouping-desc)))))
+
+    (testing "sorted grouping-accum with custom return-convert-fn (vec)"
+      (testing "all facts"
+        (is (= [{:?t [["MCI" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "MCI")]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["ORD" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "ORD")]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["TPA" (->> (for [fact shuffled-facts
+                                        :when (= (:location fact) "TPA")]
+                                    fact)
+                                  (sort-by :temperature))]]}]
+               (query session sorted-grouping-conv))))
+      (testing "retracted some facts"
+        (is (= [{:?t [["MCI" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "MCI")
+                                                   (> (:temperature fact) 80))]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["ORD" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "ORD")
+                                                   (> (:temperature fact) 85))]
+                                    fact)
+                                  (sort-by :temperature))]
+                      ["TPA" (->> (for [fact shuffled-facts
+                                        :when (and (= (:location fact) "TPA")
+                                                   (> (:temperature fact) 90))]
+                                    fact)
+                                  (sort-by :temperature))]]}]
+               (query retracted-session sorted-grouping-conv))))
+      (testing "retracted all facts"
+        (is (= [{:?t []}]
+               (query retracted-all-session sorted-grouping-conv)))))))
