@@ -214,15 +214,19 @@
 
 (defn sorting-by
   "Return a generic sorting accumulator. Behaves like clojure.core/sort-by.
-  * `sort-field` - required - The field of a fact to sort by.
-  * `comparator` - optional - The comparator for sort by, defaults to `clojure.core/compare`."
-  ([sort-field]
-   (sorting-by sort-field compare))
-  ([sort-field comparator]
-   (assoc (all) :convert-return-fn
-          (fn do-sort
-            [return-items]
-            (sort-by sort-field comparator return-items)))))
+  * `field` - required - The field of a fact to sort by.
+  * `comparator` - optional - The comparator for sort by, defaults to `clojure.core/compare`.
+  * `convert-return-fn` - optional - Converts the resulting sorted data. Defaults to clojure.core/identity."
+  [field & {:keys [comparator
+                   convert-return-fn]
+            :or {comparator compare
+                 convert-return-fn identity}}]
+  {:pre [(ifn? convert-return-fn)
+         (ifn? comparator)]}
+  (assoc (all) :convert-return-fn
+         (comp convert-return-fn (fn do-sort
+                                   [return-items]
+                                   (sort-by field comparator return-items)))))
 
 (defn sorted-grouping-by
   "Return a generic sorted grouping accumulator. Behaves like clojure.core/group-by into a map
@@ -231,8 +235,7 @@
   * `sort-field` - required - The field of a fact to sort facts by.
   * `group-comparator` - optional - The comparator to compare sorted groups, defaults to `clojure.core/compare`.
   * `sort-comparator` - optional - The comparator to compare sorted values, defaults to `clojure.core/compare`.
-  * `convert-return-fn` - optional - Converts the resulting grouped
-  data. Defaults to clojure.core/identity."
+  * `convert-return-fn` - optional - Converts the resulting grouped data. Defaults to clojure.core/identity."
   [group-field sort-field & {:keys [group-comparator
                                     sort-comparator
                                     convert-return-fn]

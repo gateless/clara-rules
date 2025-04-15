@@ -539,9 +539,10 @@
 
 (def-rules-test test-accum-sorting-by
   {:queries [sorted-all [[] [[?t <- (acc/sorting-by :temperature) from [Temperature]]]]
-             sorted-all-desc [[] [[?t <- (acc/sorting-by :temperature >) :from [Temperature]]]]]
+             sorted-all-desc [[] [[?t <- (acc/sorting-by :temperature :comparator >) :from [Temperature]]]]
+             sorted-all-conv [[] [[?t <- (acc/sorting-by :temperature :convert-return-fn #(map :temperature %)) :from [Temperature]]]]]
 
-   :sessions [empty-session [sorted-all sorted-all-desc] {}]}
+   :sessions [empty-session [sorted-all sorted-all-desc sorted-all-conv] {}]}
 
   (let [shuffled-facts (shuffle
                         (for [temp (range 80 85)]
@@ -565,6 +566,10 @@
     (is (= [{:?t (sort-by :temperature > shuffled-facts)}]
            (query session sorted-all-desc)))
 
+    (is (= [{:?t (->> (sort-by :temperature shuffled-facts)
+                      (map :temperature))}]
+           (query session sorted-all-conv)))
+
     (is (= [{:?t (->> [(->Temperature 81 "MCI")
                        (->Temperature 82 "MCI")]
                       (apply disj (set shuffled-facts))
@@ -577,9 +582,17 @@
                       (sort-by :temperature >))}]
            (query retracted sorted-all-desc)))
 
+    (is (= [{:?t (->> [(->Temperature 81 "MCI")
+                       (->Temperature 82 "MCI")]
+                      (apply disj (set shuffled-facts))
+                      (sort-by :temperature)
+                      (map :temperature))}]
+           (query retracted sorted-all-conv)))
+
     (is (= [{:?t []}]
            (query all-retracted sorted-all)
-           (query all-retracted sorted-all-desc))
+           (query all-retracted sorted-all-desc)
+           (query all-retracted sorted-all-conv))
         "Retracting all values should cause a return to the initial value of
         an empty sequence.")))
 
