@@ -1,5 +1,8 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.5.2
+* implement sorting-by and sorted-grouping-by accumulators
+
 # 1.5.1
 * do not break inspection if no accumulated facts are found
 
