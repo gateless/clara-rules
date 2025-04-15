@@ -221,8 +221,7 @@
                    convert-return-fn]
             :or {comparator compare
                  convert-return-fn identity}}]
-  {:pre [(ifn? convert-return-fn)
-         (ifn? comparator)]}
+  {:pre [(ifn? convert-return-fn)]}
   (assoc (all) :convert-return-fn
          (comp convert-return-fn (fn do-sort
                                    [return-items]
@@ -243,12 +242,8 @@
                                   sort-comparator compare
                                   convert-return-fn identity}}]
   {:pre [(ifn? convert-return-fn)]}
-  (reduce-to-accum
-   (fn [m v]
-     (let [k (group-field v)]
-       (update m k grouping-fn v)))
-   {}
-   (comp convert-return-fn (fn [m]
-                             (into (sorted-map-by group-comparator)
-                                   (for [[k vs] m]
-                                     [k (sort-by sort-field sort-comparator vs)]))))))
+  (update (grouping-by group-field convert-return-fn)
+          :convert-return-fn comp (fn do-sort [m]
+                                    (into (sorted-map-by group-comparator)
+                                          (for [[k vs] m]
+                                            [k (sort-by sort-field sort-comparator vs)])))))
