@@ -213,7 +213,7 @@
      :retract-fn (fn [items retracted] (drop-one-of items (field retracted)))})))
 
 (defn sorting-by
-  "Return a generic grouping accumulator. Behaves like clojure.core/sort-by.
+  "Return a generic sorting accumulator. Behaves like clojure.core/sort-by.
   * `sort-field` - required - The field of a fact to sort by.
   * `comparator` - optional - The comparator for sort by, defaults to `clojure.core/compare`."
   ([sort-field]
@@ -225,7 +225,8 @@
             (sort-by sort-field comparator return-items)))))
 
 (defn sorted-grouping-by
-  "Return a generic grouping accumulator. Behaves like clojure.core/group-by.
+  "Return a generic sorted grouping accumulator. Behaves like clojure.core/group-by into a map
+  as if created by `clojure.core/sorted-map-by`, and each group of values is sorted as if by `clojure.core/sort-by`.
   * `group-field` - required - The field of a fact to group facts by.
   * `sort-field` - required - The field of a fact to sort facts by.
   * `group-comparator` - optional - The comparator to compare sorted groups, defaults to `clojure.core/compare`.
