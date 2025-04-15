@@ -1,5 +1,8 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.5.3
+* save sorted-grouping-by accumulator result into array map
+
 # 1.5.2
 * implement sorting-by and sorted-grouping-by accumulators
 
