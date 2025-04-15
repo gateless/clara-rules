@@ -244,6 +244,7 @@
   {:pre [(ifn? convert-return-fn)]}
   (update (grouping-by group-field convert-return-fn)
           :convert-return-fn comp (fn do-sort [m]
-                                    (into (sorted-map-by group-comparator)
-                                          (for [[k vs] m]
-                                            [k (sort-by sort-field sort-comparator vs)])))))
+                                    (->> (for [[k vs] m]
+                                           [k (sort-by sort-field sort-comparator vs)])
+                                         (sort-by first group-comparator)
+                                         (into (array-map))))))
