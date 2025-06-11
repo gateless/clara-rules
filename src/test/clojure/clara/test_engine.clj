@@ -1,4 +1,9 @@
 (ns clara.test-engine
+  "Test suite for the Clara rules engine with async rules and queries.
+   This test suite benchmarks the performance of async rules and queries
+   using a parallel compute engine."
+  {:author "Jose Gomez"
+   :salience 1000}
   (:require [clara.rules :refer [mk-session
                                  fire-rules
                                  fire-rules-async
@@ -15,6 +20,7 @@
 
 (defrule test-slow-rule-1
   "this rule does some async work using go block"
+  {:foo "bar"}
   [:number [{:keys [value]}]
    (= value ?value)
    (pos? ?value)]
@@ -34,6 +40,17 @@
    (!<! (timeout 50))
    (insert! {:type :output
              :value (inc ?value)})))
+
+(deftest test-engine-namespace-props
+  (testing "rule properties and namespace properties are merged correctly"
+    (is (= {:author "Jose Gomez"
+            :salience 1000
+            :foo "bar"}
+           (:props (test-slow-rule-1)))))
+  (testing "namespace properties are not lost in rules"
+    (is (= {:author "Jose Gomez"
+            :salience 1000}
+           (:props (test-slow-rule-2))))))
 
 (defquery test-slow-query
   []

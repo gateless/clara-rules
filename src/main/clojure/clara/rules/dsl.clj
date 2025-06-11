@@ -309,16 +309,18 @@
 
 (defn build-rule
   "Function used to parse and build a rule using the DSL syntax."
-  ([name body rule-env rule-meta]
-   (let [doc (if (string? (first body)) (first body) nil)
-         body (if doc (rest body) body)
-         properties (if (map? (first body)) (first body) nil)
-         definition (if properties (rest body) body)
-         {:keys [lhs rhs]} (split-lhs-rhs definition)]
-     (cond-> (parse-rule* lhs rhs properties rule-env rule-meta)
+  [name body rule-env rule-meta & {:as extra-properties}]
+  (let [doc (if (string? (first body)) (first body) nil)
+        body (if doc (rest body) body)
+        properties (if (map? (first body))
+                     (merge extra-properties (first body))
+                     extra-properties)
+        definition (if properties (rest body) body)
+        {:keys [lhs rhs]} (split-lhs-rhs definition)]
+    (cond-> (parse-rule* lhs rhs properties rule-env rule-meta)
 
-       name (assoc :name (production-name name))
-       doc (assoc :doc doc)))))
+      name (assoc :name (production-name name))
+      doc (assoc :doc doc))))
 
 (defn build-rule-action
   "Function used to parse and build a rule action using the DSL syntax."
