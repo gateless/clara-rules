@@ -256,7 +256,7 @@
   See the [rule authoring documentation](http://www.clara-rules.org/docs/rules/) for details."
   [rule-name & body]
   (let [doc (if (string? (first body)) (first body) nil)
-        ns-props (dissoc (meta *ns*) :doc)
+        ns-props (dsl/get-ns-props *ns*)
         rule (dsl/build-rule rule-name body &env (meta &form) ns-props) ;;; Full rule LHS + RHS
         rule-action (dsl/build-rule-action rule-name body &env (meta &form)) ;;; Only the RHS
         rule-node (com/build-rule-node rule-action) ;;; The Node of the RHS
@@ -318,11 +318,11 @@
   defining rules/queries to ensure the cache is cleared properly."
   []
   (let [clara-syms (->> (ns-interns *ns*)
-                        (filter (comp var? second))
-                        (filter (comp (some-fn :rule
-                                               :query
-                                               :hierarchy
-                                               :production-seq) meta second)) ; Filter down to rules, queries, facts, and hierarchy.
-                        (map first))] ; Take the symbols for each var
-    (doseq [psym clara-syms]
-      (ns-unmap *ns* psym))))
+                      (filter (comp var? second))
+                      (filter (comp (some-fn :rule
+                                             :query
+                                             :hierarchy
+                                             :production-seq) meta second)) ; Filter down to rules, queries, facts, and hierarchy.
+                      (map first))] ; Take the symbols for each var
+   (doseq [psym clara-syms]
+     (ns-unmap *ns* psym))))

@@ -11,12 +11,15 @@
                                  defrule defquery
                                  insert-all
                                  insert!]]
+            [clara.rules.dsl :as dsl]
             [clojure.core.async :refer [go timeout <!]]
             [futurama.core :refer [async !<! !<!!]]
             [clojure.test :refer [deftest testing is]]
             [criterium.core :refer [report-result
                                     with-progress-reporting
                                     quick-benchmark]]))
+
+(dsl/add-allowed-ns-props! :foo)
 
 (defrule test-slow-rule-1
   "this rule does some async work using go block"

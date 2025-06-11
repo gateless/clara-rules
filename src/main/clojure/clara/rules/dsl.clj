@@ -3,10 +3,42 @@
   (:require [clojure.walk :as walk]
             [clara.rules.compiler :as com]
             [clara.rules.platform :as platform])
-  (:refer-clojure :exclude [qualified-keyword?]))
+  (:refer-clojure :exclude [qualified-keyword?])
+  (:import [clojure.lang Namespace]))
 
 ;; Let operators be symbols or keywords.
 (def ops #{'and 'or 'not 'exists :and :or :not :exists})
+
+;; Define the set of allowed properties for rules and queries that are imported from their namespaces.
+(defonce allowed-ns-props-set #{})
+
+(defn- flatten-coll
+  [x]
+  (filter (complement coll?)
+          (rest (tree-seq coll? seq x))))
+
+(defn add-allowed-ns-props!
+  "Adds the given properties to the set of allowed properties for rules and queries."
+  [& props]
+  (alter-var-root #'allowed-ns-props-set
+    (constantly (into allowed-ns-props-set (flatten-coll props)))))
+
+(defn set-allowed-ns-props!
+  "Sets the allowed properties for rules and queries to the given set of properties."
+  [& props]
+  (alter-var-root #'allowed-ns-props-set
+    (constantly (set (flatten-coll props)))))
+
+(set-allowed-ns-props! :author :no-loop :salience)
+
+(defn get-ns-props
+  "Returns the set of namespace properties for rules and queries."
+  [^Namespace ns]
+  (->> (for [[k v] (meta ns)
+             :when (contains? allowed-ns-props-set k)]
+         [k v])
+       (into {})
+       (not-empty)))
 
 (defn- separator?
   "True iff `x` is a rule body separator symbol."
@@ -312,10 +344,12 @@
   [name body rule-env rule-meta & {:as extra-properties}]
   (let [doc (if (string? (first body)) (first body) nil)
         body (if doc (rest body) body)
-        properties (if (map? (first body))
-                     (merge extra-properties (first body))
+        body-properties (when (map? (first body))
+                          (first body))
+        definition (if body-properties (rest body) body)
+        properties (if (map? body-properties)
+                     (merge body-properties extra-properties)
                      extra-properties)
-        definition (if properties (rest body) body)
         {:keys [lhs rhs]} (split-lhs-rhs definition)]
     (cond-> (parse-rule* lhs rhs properties rule-env rule-meta)
 
