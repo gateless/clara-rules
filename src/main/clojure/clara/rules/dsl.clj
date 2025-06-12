@@ -21,18 +21,18 @@
   "Adds the given properties to the set of allowed properties for rules and queries."
   [& props]
   (alter-var-root #'allowed-ns-props-set
-    (constantly (into allowed-ns-props-set (flatten-coll props)))))
+                  (constantly (into allowed-ns-props-set (flatten-coll props)))))
 
 (defn set-allowed-ns-props!
   "Sets the allowed properties for rules and queries to the given set of properties."
   [& props]
   (alter-var-root #'allowed-ns-props-set
-    (constantly (set (flatten-coll props)))))
+                  (constantly (set (flatten-coll props)))))
 
 (set-allowed-ns-props! :author :no-loop :salience)
 
 (defn get-ns-props
-  "Returns the set of namespace properties for rules and queries."
+  "Returns a map of namespace properties for rules and queries, or nil if none are found."
   [^Namespace ns]
   (->> (for [[k v] (meta ns)
              :when (contains? allowed-ns-props-set k)]

@@ -318,11 +318,11 @@
   defining rules/queries to ensure the cache is cleared properly."
   []
   (let [clara-syms (->> (ns-interns *ns*)
-                      (filter (comp var? second))
-                      (filter (comp (some-fn :rule
-                                             :query
-                                             :hierarchy
-                                             :production-seq) meta second)) ; Filter down to rules, queries, facts, and hierarchy.
-                      (map first))] ; Take the symbols for each var
-   (doseq [psym clara-syms]
-     (ns-unmap *ns* psym))))
+                        (filter (comp var? second))
+                        (filter (comp (some-fn :rule
+                                               :query
+                                               :hierarchy
+                                               :production-seq) meta second)) ; Filter down to rules, queries, facts, and hierarchy.
+                        (map first))] ; Take the symbols for each var
+    (doseq [psym clara-syms]
+      (ns-unmap *ns* psym))))
