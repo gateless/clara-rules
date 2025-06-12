@@ -256,7 +256,8 @@
   See the [rule authoring documentation](http://www.clara-rules.org/docs/rules/) for details."
   [rule-name & body]
   (let [doc (if (string? (first body)) (first body) nil)
-        rule (dsl/build-rule rule-name body &env (meta &form)) ;;; Full rule LHS + RHS
+        ns-props (dsl/get-ns-props *ns*)
+        rule (dsl/build-rule rule-name body &env (meta &form) ns-props) ;;; Full rule LHS + RHS
         rule-action (dsl/build-rule-action rule-name body &env (meta &form)) ;;; Only the RHS
         rule-node (com/build-rule-node rule-action) ;;; The Node of the RHS
         {:keys [bindings production]} rule-node
