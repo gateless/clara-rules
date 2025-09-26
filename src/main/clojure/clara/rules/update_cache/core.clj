@@ -1,6 +1,6 @@
 (ns clara.rules.update-cache.core
   (:require [ham-fisted.api :as hf])
-  (:import [ham_fisted MutList]))
+  (:import [ham_fisted MutTreeList]))
 
 ;; Record indicating pending insertion or removal of a sequence of facts.
 (defrecord PendingUpdate [type facts])
@@ -14,7 +14,7 @@
 
 ;; This cache replicates the behavior prior to https://github.com/cerner/clara-rules/issues/249,
 ;; just in a stateful object rather than a persistent data structure.
-(deftype OrderedUpdateCache [^MutList ^:unsynchronized-mutable updates]
+(deftype OrderedUpdateCache [^MutTreeList ^:unsynchronized-mutable updates]
   UpdateCache
 
   (add-insertions! [this facts]
