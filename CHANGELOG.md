@@ -1,5 +1,8 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.5.5
+* upgrade hamfisted collections to latest, make update cache compatible.
+
 # 1.5.4
 * add support for namespace props, so that salience can be set on rules in a namespace.
 
