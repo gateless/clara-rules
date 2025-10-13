@@ -5,9 +5,9 @@
   <groupId>com.github.k13labs</groupId>
   <artifactId>clara-rules</artifactId>
   <name>clara-rules</name>
-  <version>1.5.5</version>
+  <version>1.5.6</version>
   <scm>
-    <tag>1.5.5</tag>
+    <tag>1.5.6</tag>
     <url>https://github.com/k13labs/clara-rules</url>
     <connection>scm:git:git://github.com/k13labs/clara-rules.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/k13labs/clara-rules.git</developerConnection>
@@ -27,7 +27,7 @@
     <dependency>
       <groupId>com.cnuernber</groupId>
       <artifactId>ham-fisted</artifactId>
-      <version>2.035</version>
+      <version>2.039</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>

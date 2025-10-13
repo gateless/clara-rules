@@ -1,5 +1,8 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.5.6
+* upgrade hamfisted collections to latest 2.039
+
 # 1.5.5
 * upgrade hamfisted collections to latest, make update cache compatible.
 
