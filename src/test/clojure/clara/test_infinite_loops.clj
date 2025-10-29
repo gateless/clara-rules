@@ -23,6 +23,15 @@
 
 (use-fixtures :each side-effect-holder-fixture)
 
+(defmacro task-cancelled-exception?
+  [& body]
+  `(try
+     ~@body
+     false
+     (catch Exception ~'ex
+       (or (instance? CancellationException ~'ex)
+           (instance? InterruptedException ~'ex)))))
+
 (deftest cancel-infinite-recursive-insertion-test
   (testing "Test of canceling a infinite loop due to runaway insertions without retractions"
     (testing "fire async - sync rule"
@@ -36,7 +45,7 @@
                          (fire-rules-async))]
         (Thread/sleep 10)
         (async-cancel! result-f)
-        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))
+        (is (task-cancelled-exception? (!<!! result-f)))))
     (testing "fire async - async rule"
       (let [counter (atom 0)
             cold-rule (dsl/parse-rule [[Cold]]
@@ -49,7 +58,7 @@
                          (fire-rules-async))]
         (Thread/sleep 10)
         (async-cancel! result-f)
-        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))
+        (is (task-cancelled-exception? (!<!! result-f)))))
     (testing "fire sync - sync rule"
       (let [counter (atom 0)
             cold-rule (dsl/parse-rule [[Cold]]
@@ -62,7 +71,7 @@
                           (fire-rules)))]
         (Thread/sleep 10)
         (async-cancel! result-f)
-        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))
+        (is (task-cancelled-exception? (!<!! result-f)))))
     (testing "fire sync - async rule"
       (let [counter (atom 0)
             cold-rule (dsl/parse-rule [[Cold]]
@@ -76,7 +85,7 @@
                           (fire-rules)))]
         (Thread/sleep 10)
         (async-cancel! result-f)
-        (is (thrown-with-msg? InterruptedException #"Activation cancelled\." (!<!! result-f)))))))
+        (is (task-cancelled-exception? (!<!! result-f)))))))
 
 (def-rules-test test-standard-out-warning
 

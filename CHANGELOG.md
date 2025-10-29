@@ -1,5 +1,8 @@
 This is a history of changes to k13labs/clara-rules.
 
+# 1.5.7
+* upgrade futurama to latest 1.4.1
+
 # 1.5.6
 * upgrade hamfisted collections to latest 2.039
 
