@@ -12,7 +12,7 @@ Releasing the project requires these steps:
 6. Update the `pom.xml` in `main` to a new minor version, commit the changes.
 
 [clojars]: https://clojars.org
-[release-site]: https://clojars.org/com.github.k13labs/clara-rules
-[project-url]: https://github.com/k13labs/clara-rules/
+[release-site]: https://clojars.org/com.github.gateless/clara-rules
+[project-url]: https://github.com/gateless/clara-rules/
 [semantic-versioning]: http://semver.org/
 [github-release-url]: https://help.github.com/articles/creating-releases/

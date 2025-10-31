@@ -1,4 +1,4 @@
-This is a history of changes to k13labs/clara-rules.
+This is a history of changes to gateless/clara-rules.
 
 # 1.5.7
 * upgrade futurama to latest 1.4.1
@@ -41,7 +41,7 @@ This is a history of changes to k13labs/clara-rules.
 * add djblue/portal to dev profile.
 
 # 1.4.2
-* update k13labs/futurama to latest version
+* update gateless/futurama to latest version
 
 # 1.4.1
 * ensure parse-rule, parse-query, defrule, defquery macros capture local env
@@ -92,7 +92,7 @@ This is a history of changes to k13labs/clara-rules.
 
 # 1.0.0
 * Bump futurama version to first major version
-* Initial major release of k13labs/clara-rules
+* Initial major release of gateless/clara-rules
 
 # 0.9.9
 * Bump futurama version to latest
@@ -128,7 +128,7 @@ This is a history of changes to k13labs/clara-rules.
 * Refactor engine to support both fire-rules and fire-rules-async
 * Replace mutable/transient collections with [ham-fisted](https://github.com/cnuernber/ham-fisted) data structures.
 
-This is a history of changes to clara-rules prior to forking to k13labs/clara-rules.
+This is a history of changes to clara-rules prior to forking to gateless/clara-rules.
 
 ### 0.24.0
 * uplift to cljs 1.11.132

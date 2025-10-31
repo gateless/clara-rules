@@ -4,7 +4,7 @@
                  :ensure "target/main/classes"}
  :deps {org.clojure/clojure {:mvn/version "1.12.3"}
         org.clojure/core.cache {:mvn/version "1.1.234"}
-        com.github.k13labs/futurama {:mvn/version "1.4.1"}
+        com.github.gateless/futurama {:mvn/version "1.4.1"}
         com.cnuernber/ham-fisted {:mvn/version "2.039"}
         prismatic/schema {:mvn/version "1.4.1"}
         org.clojure/data.fressian {:mvn/version "1.1.0"}}

@@ -2,15 +2,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <packaging>jar</packaging>
-  <groupId>com.github.k13labs</groupId>
+  <groupId>com.github.gateless</groupId>
   <artifactId>clara-rules</artifactId>
   <name>clara-rules</name>
   <version>1.5.7</version>
   <scm>
     <tag>1.5.7</tag>
-    <url>https://github.com/k13labs/clara-rules</url>
-    <connection>scm:git:git://github.com/k13labs/clara-rules.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/k13labs/clara-rules.git</developerConnection>
+    <url>https://github.com/gateless/clara-rules</url>
+    <connection>scm:git:git://github.com/gateless/clara-rules.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/gateless/clara-rules.git</developerConnection>
   </scm>
   <licenses>
     <license>
@@ -40,7 +40,7 @@
       <version>1.4.1</version>
     </dependency>
     <dependency>
-      <groupId>com.github.k13labs</groupId>
+      <groupId>com.github.gateless</groupId>
       <artifactId>futurama</artifactId>
       <version>1.4.1</version>
     </dependency>
