@@ -1,5 +1,8 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.5.9
+* change use of ham-fisted MutList to private func in UpdateCache impl
+
 # 1.5.8
 * upgrade hamfisted collections to latest 3.000
 
