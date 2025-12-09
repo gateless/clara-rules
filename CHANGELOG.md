@@ -1,5 +1,8 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.5.8
+* upgrade hamfisted collections to latest 3.000
+
 # 1.5.7
 * upgrade futurama to latest 1.4.1
 
