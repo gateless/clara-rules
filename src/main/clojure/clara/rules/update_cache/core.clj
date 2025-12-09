@@ -12,16 +12,19 @@
   (add-retractions! [this facts])
   (get-updates-and-reset! [this]))
 
+(defn- add-changes! [^IMutList updates pending-update]
+  (.add updates pending-update))
+
 ;; This cache replicates the behavior prior to https://github.com/cerner/clara-rules/issues/249,
 ;; just in a stateful object rather than a persistent data structure.
 (deftype OrderedUpdateCache [^IMutList ^:unsynchronized-mutable updates]
   UpdateCache
 
   (add-insertions! [this facts]
-    (.add updates (->PendingUpdate :insert facts)))
+    (add-changes! updates (->PendingUpdate :insert facts)))
 
   (add-retractions! [this facts]
-    (.add updates (->PendingUpdate :retract facts)))
+    (add-changes! updates (->PendingUpdate :retract facts)))
 
   (get-updates-and-reset! [this]
     (let [current-updates (hf/persistent! updates)]
