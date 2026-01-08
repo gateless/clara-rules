@@ -2106,7 +2106,7 @@
         transport (LocalTransport.)
 
         session (eng/assemble {:rulebase rulebase
-                               :memory (eng/local-memory rulebase transport activation-group-sort-fn activation-group-fn get-alphas-fn)
+                               :memory (eng/local-memory rulebase transport activation-group-sort-fn activation-group-fn)
                                :transport transport
                                :listeners (get options :listeners  [])
                                :get-alphas-fn get-alphas-fn})]

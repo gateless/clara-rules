@@ -2234,8 +2234,8 @@
 
 (defn local-memory
   "Returns a local, in-process working memory."
-  [rulebase transport activation-group-sort-fn activation-group-fn alphas-fn]
-  (let [memory (mem/to-transient (mem/local-memory rulebase activation-group-sort-fn activation-group-fn alphas-fn))]
+  [rulebase transport activation-group-sort-fn activation-group-fn]
+  (let [memory (mem/to-transient (mem/local-memory rulebase activation-group-sort-fn activation-group-fn))]
     (doseq [beta-node (:beta-roots rulebase)]
       (left-activate beta-node {} [empty-token] memory transport l/default-listener))
     (mem/to-persistent! memory)))
