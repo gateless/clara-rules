@@ -172,6 +172,8 @@
     (boolean (or (#{'= '== 'clojure.core/= 'clojure.core/==} op)
                  (#{'clojure.core/= 'clojure.core/==} (qualify-when-sym op))))))
 
+(def ^:private read-only-expr (constantly nil))
+
 (def ^:dynamic *compile-ctx* nil)
 
 (defn try-eval
@@ -1542,7 +1544,8 @@
    See #381 for more details."
   [key->expr :- schema/NodeExprLookup
    options :- {sc/Keyword sc/Any}]
-  (let [expr-cache (or (:compiler-cache options)
+  (let [read-only? (:read-only? options false)
+        expr-cache (or (:compiler-cache options)
                        default-compiler-cache)
         forms-per-eval (or (:forms-per-eval options)
                            forms-per-eval-default)
@@ -1550,17 +1553,19 @@
                          hash)
         prepare-expr (fn do-prepare-expr
                        [[expr-key [expr compilation-ctx]]]
-                       (if expr-cache
-                         (let [cache-key [(hash-expr-fn expr)
-                                          (hash-expr-fn compilation-ctx)]
-                               compilation-ctx (assoc compilation-ctx :cache-key cache-key)
-                               compiled-handler (some-> compilation-ctx :compile-ctx :production :handler resolve)
-                               compiled-expr (or compiled-handler
-                                                 (cache/lookup expr-cache cache-key))]
-                           (if compiled-expr
-                             [:compiled [expr-key [compiled-expr compilation-ctx]]]
-                             [:prepared [expr-key [expr compilation-ctx]]]))
-                         [:prepared [expr-key [expr compilation-ctx]]]))
+                       (if read-only? ;;; read-only expressions cannot be cached and are replaced by a read-only-expr
+                         [:compiled [expr-key [read-only-expr compilation-ctx]]]
+                         (if expr-cache
+                           (let [cache-key [(hash-expr-fn expr)
+                                            (hash-expr-fn compilation-ctx)]
+                                 compilation-ctx (assoc compilation-ctx :cache-key cache-key)
+                                 compiled-handler (some-> compilation-ctx :compile-ctx :production :handler resolve)
+                                 compiled-expr (or compiled-handler
+                                                   (cache/lookup expr-cache cache-key))]
+                             (if compiled-expr
+                               [:compiled [expr-key [compiled-expr compilation-ctx]]]
+                               [:prepared [expr-key [expr compilation-ctx]]]))
+                           [:prepared [expr-key [expr compilation-ctx]]])))
         batching-try-eval (fn do-compile-exprs
                             [exprs compilation-ctxs]
                             ;; Try to evaluate all of the expressions as a batch. If they fail the batch eval then we

@@ -59,12 +59,6 @@
 (def ^:private ^Map class->factory-fn-sym (java.util.Collections/synchronizedMap
                                            (WeakHashMap.)))
 
-;; This private var is used during deserialization of a rulebase or rules-session
-;; when the :read-only? option is passed, then it is bound to the *read-only* var,
-;; and the the read handlers use this value to check if the expression fns should be added.
-;; when *read-only* is false, the expre fns are added, when it is true they are excluded.
-(def ^:private ^:dynamic *read-only* false)
-
 (defn record-map-constructor-name
   "Return the 'map->' prefix, factory constructor function for a Clojure record."
   [rec]
@@ -146,8 +140,7 @@
          m (read-meta rdr)]
      (cond-> (builder build-map)
        m (with-meta m)
-       (and add-fn
-            (not *read-only*)) add-fn))))
+       add-fn (add-fn)))))
 
 (defn- create-cached-node-handler
   ([clazz
@@ -632,15 +625,11 @@
                                        d/*clj-struct-holder* record-holder]
                                (binding [d/*node-fn-cache* (-> (fres/read-object rdr)
                                                                (reconstruct-expressions)
-                                                               (cond->
-                                                                (not read-only?) (com/compile-exprs opts)))
-                                         *read-only* read-only?]
+                                                               (com/compile-exprs opts))]
                                  (assoc (fres/read-object rdr)
                                         :node-expr-fn-lookup
                                         d/*node-fn-cache*)))]
-                         (if read-only?
-                           (eng/rulebase->query-only-rulebase without-opts-rulebase)
-                           (d/rulebase->rulebase-with-opts without-opts-rulebase opts))))]
+                         (d/rulebase->rulebase-with-opts without-opts-rulebase opts)))]
         (if rulebase-only?
           rulebase
           (let [memory (binding [d/*clj-struct-holder* record-holder
