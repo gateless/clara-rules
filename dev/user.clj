@@ -14,8 +14,7 @@
 (comment
   (clear-ns-vars!)
   (add-tap #'println)
-  (remove-tap #'println)
-  (tap> "foobar"))
+  (remove-tap #'println))
 
 (defhierarchy foobar
   :thing/foo :thing/that

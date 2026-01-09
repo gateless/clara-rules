@@ -1614,7 +1614,8 @@
                       compilation-ctxs (mapv (comp second second) prepared-exprs)
                       prev-compiled-exprs (map second (:compiled grouped-exprs))
                       next-compiled-exprs (mapv vector node-expr-keys
-                                                (with-bindings (if nspace
+                                                (with-bindings (if (and nspace
+                                                                        (not read-only?))
                                                                  {#'*ns* (the-ns nspace)}
                                                                  {})
                                                   (batching-try-eval exprs compilation-ctxs)))]]

@@ -159,7 +159,8 @@
 (defn null-listener?
   "Returns true if the given listener is the null listener, false otherwise."
   [listener]
-  (instance? NullListener listener))
+  (or (instance? NullListener listener)
+      (nil? listener)))
 
 (defn get-children
   "Returns the children of a delegating listener."
@@ -174,3 +175,9 @@
   (if (null-listener? listener)
     []
     (get-children listener)))
+
+(defn ^:internal ^:no-doc combine-listeners
+  [listeners]
+  (if (> (count listeners) 0)
+    (delegating-listener listeners)
+    default-listener))

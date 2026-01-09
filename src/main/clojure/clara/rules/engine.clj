@@ -2143,9 +2143,7 @@
   (->LocalSession rulebase
                   memory
                   transport
-                  (if (> (count listeners) 0)
-                    (l/delegating-listener listeners)
-                    l/default-listener)
+                  (l/combine-listeners listeners)
                   get-alphas-fn
                   []))
 
@@ -2178,8 +2176,12 @@
      :get-alphas-fn get-alphas-fn}))
 
 (defn assemble-read-only
-  [{:keys [rulebase memory transport listener get-alphas-fn]}]
-  (ReadOnlyLocalSession. rulebase memory transport listener get-alphas-fn))
+  [{:keys [rulebase memory transport listeners get-alphas-fn]}]
+  (ReadOnlyLocalSession. rulebase
+                         memory
+                         transport
+                         (l/combine-listeners listeners)
+                         get-alphas-fn))
 
 (defn as-read-only
   [session]
