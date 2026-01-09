@@ -20,10 +20,6 @@
   ;; Returns the rulebase associated with the given memory.
   (get-rulebase [memory])
 
-  ;; Returns a function that produces a map of alpha nodes to
-  ;; facts that match the type of the node
-  (get-alphas-fn [memory])
-
   ;; Returns the elements assoicated with the given node.
   (get-elements [memory node bindings])
 
@@ -455,7 +451,6 @@
 (deftype TransientLocalMemory [rulebase
                                activation-group-sort-fn
                                activation-group-fn
-                               alphas-fn
                                ^Map alpha-memory
                                ^Map beta-memory
                                ^Map accum-memory
@@ -464,8 +459,6 @@
 
   IMemoryReader
   (get-rulebase [memory] rulebase)
-
-  (get-alphas-fn [memory] alphas-fn)
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
@@ -802,7 +795,6 @@
       (->PersistentLocalMemory rulebase
                                activation-group-sort-fn
                                activation-group-fn
-                               alphas-fn
                                (persistent-maps persistent-vals alpha-memory)
                                (persistent-maps persistent-vals beta-memory)
                                (persistent-maps persistent-vals accum-memory)
@@ -814,7 +806,6 @@
 (defrecord PersistentLocalMemory [rulebase
                                   activation-group-sort-fn
                                   activation-group-fn
-                                  alphas-fn
                                   alpha-memory
                                   beta-memory
                                   accum-memory
@@ -822,8 +813,6 @@
                                   activation-map]
   IMemoryReader
   (get-rulebase [memory] rulebase)
-
-  (get-alphas-fn [memory] alphas-fn)
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
@@ -888,7 +877,6 @@
     (TransientLocalMemory. rulebase
                            activation-group-sort-fn
                            activation-group-fn
-                           alphas-fn
                            (->mutable-map alpha-memory)
                            (->mutable-map beta-memory)
                            (->mutable-map accum-memory)
@@ -902,12 +890,11 @@
 
 (defn local-memory
   "Creates an persistent local memory for the given rule base."
-  [rulebase activation-group-sort-fn activation-group-fn alphas-fn]
+  [rulebase activation-group-sort-fn activation-group-fn]
 
   (->PersistentLocalMemory rulebase
                            activation-group-sort-fn
                            activation-group-fn
-                           alphas-fn
                            (hf/hash-map)
                            (hf/hash-map)
                            (hf/hash-map)

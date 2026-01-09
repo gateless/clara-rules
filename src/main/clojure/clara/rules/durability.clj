@@ -467,8 +467,7 @@
                 ;; Currently these do not support serialization and must be provided during deserialization via a
                 ;; base-session or they default to the standard defaults.
                 :activation-group-sort-fn nil
-                :activation-group-fn nil
-                :alphas-fn nil))))
+                :activation-group-fn nil))))
 
 (defn opts->get-alphas-fn [rulebase opts]
   (let [fact-type-fn (:fact-type-fn opts type)
@@ -493,34 +492,30 @@
          memory (eng/local-memory rulebase
                                   (clara.rules.engine.LocalTransport.)
                                   (:activation-group-sort-fn rulebase)
-                                  (:activation-group-fn rulebase)
-                                  ;; TODO: Memory doesn't seem to ever need this or use
-                                  ;; it.  Can we just remove it from memory?
-                                  (:get-alphas-fn rulebase))]
+                                  (:activation-group-fn rulebase))
+         components {:rulebase rulebase
+                     :memory memory
+                     :transport (or transport (clara.rules.engine.LocalTransport.))
+                     :listeners (or listeners [])
+                     :get-alphas-fn (:get-alphas-fn rulebase)}]
      (if read-only?
-       (eng/assemble-read-only {:rulebase rulebase
-                                :memory memory})
-       (eng/assemble {:rulebase rulebase
-                      :memory memory
-                      :transport (or transport (clara.rules.engine.LocalTransport.))
-                      :listeners (or listeners [])
-                      :get-alphas-fn (:get-alphas-fn rulebase)}))))
+       (eng/assemble-read-only components)
+       (eng/assemble components))))
 
   ([rulebase memory opts]
    (let [{:keys [listeners transport read-only?]} opts
          memory (assoc memory
                        :rulebase rulebase
                        :activation-group-sort-fn (:activation-group-sort-fn rulebase)
-                       :activation-group-fn (:activation-group-fn rulebase)
-                       :alphas-fn (:get-alphas-fn rulebase))]
+                       :activation-group-fn (:activation-group-fn rulebase))
+         components {:rulebase rulebase
+                     :memory memory
+                     :transport (or transport (clara.rules.engine.LocalTransport.))
+                     :listeners (or listeners [])
+                     :get-alphas-fn (:get-alphas-fn rulebase)}]
      (if read-only?
-       (eng/assemble-read-only {:rulebase rulebase
-                                :memory memory})
-       (eng/assemble {:rulebase rulebase
-                      :memory memory
-                      :transport (or transport (clara.rules.engine.LocalTransport.))
-                      :listeners (or listeners [])
-                      :get-alphas-fn (:get-alphas-fn rulebase)})))))
+       (eng/assemble-read-only components)
+       (eng/assemble components)))))
 
 (defn rulebase->rulebase-with-opts
   "Intended for use in rulebase deserialization implementations where these functions were stripped

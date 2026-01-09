@@ -2143,9 +2143,7 @@
   (->LocalSession rulebase
                   memory
                   transport
-                  (if (> (count listeners) 0)
-                    (l/delegating-listener listeners)
-                    l/default-listener)
+                  (l/combine-listeners listeners)
                   get-alphas-fn
                   []))
 
@@ -2153,7 +2151,7 @@
   [op]
   (throw (UnsupportedOperationException. (format "%s: this session is read-only" op))))
 
-(deftype ReadOnlyLocalSession [rulebase memory]
+(deftype ReadOnlyLocalSession [rulebase memory transport listener get-alphas-fn]
   ISession
   (insert [session facts]
     (throw-unsupported-read-only-operation "insert"))
@@ -2172,35 +2170,18 @@
 
   (components [session]
     {:rulebase rulebase
-     :memory memory}))
-
-(defn rulebase->query-only-rulebase
-  "Construcs a read only network from a rulebase, the read only network only contains query nodes"
-  [rulebase]
-  (assoc rulebase
-         :alpha-roots {}
-         :beta-roots []
-         :productions #{}
-         :production-nodes []
-         :id-to-node {}
-         :activation-group-sort-fn nil
-         :activation-group-fn nil
-         :get-alphas-fn nil
-         :node-expr-fn-lookup {}))
+     :memory memory
+     :transport transport
+     :listeners (l/flatten-listener listener)
+     :get-alphas-fn get-alphas-fn}))
 
 (defn assemble-read-only
-  [{:keys [rulebase memory]}]
-  (let [{:keys [query-nodes]} rulebase
-        query-only-rulebase (rulebase->query-only-rulebase rulebase)
-        query-node-set (set (vals query-nodes))
-        query-beta-memory (into {}
-                                (for [query-node query-node-set
-                                      :let [node-id (:id query-node)
-                                            node-memory (mem/get-tokens-map memory query-node)]
-                                      :when (seq node-memory)]
-                                  [node-id node-memory]))
-        query-only-memory (mem/map->PersistentLocalMemory {:beta-memory query-beta-memory})]
-    (ReadOnlyLocalSession. query-only-rulebase query-only-memory)))
+  [{:keys [rulebase memory transport listeners get-alphas-fn]}]
+  (ReadOnlyLocalSession. rulebase
+                         memory
+                         transport
+                         (l/combine-listeners listeners)
+                         get-alphas-fn))
 
 (defn as-read-only
   [session]
@@ -2234,8 +2215,8 @@
 
 (defn local-memory
   "Returns a local, in-process working memory."
-  [rulebase transport activation-group-sort-fn activation-group-fn alphas-fn]
-  (let [memory (mem/to-transient (mem/local-memory rulebase activation-group-sort-fn activation-group-fn alphas-fn))]
+  [rulebase transport activation-group-sort-fn activation-group-fn]
+  (let [memory (mem/to-transient (mem/local-memory rulebase activation-group-sort-fn activation-group-fn))]
     (doseq [beta-node (:beta-roots rulebase)]
       (left-activate beta-node {} [empty-token] memory transport l/default-listener))
     (mem/to-persistent! memory)))
