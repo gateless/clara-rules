@@ -5,9 +5,9 @@
   <groupId>com.github.gateless</groupId>
   <artifactId>clara-rules</artifactId>
   <name>clara-rules</name>
-  <version>1.6.0</version>
+  <version>1.6.0-beta1</version>
   <scm>
-    <tag>1.6.0</tag>
+    <tag>1.6.0-beta1</tag>
     <url>https://github.com/gateless/clara-rules</url>
     <connection>scm:git:git://github.com/gateless/clara-rules.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/gateless/clara-rules.git</developerConnection>
