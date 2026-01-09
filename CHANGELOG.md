@@ -1,5 +1,9 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.0
+* ensure read-only session has rules network with noop expressions (no compilation)
+* remove unused alphas-fn from memory, it is not used nor needed, cleanup
+
 # 1.5.9
 * change use of ham-fisted MutList to private func in UpdateCache impl
 

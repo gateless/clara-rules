@@ -2,12 +2,12 @@
  :deps/prep-lib {:alias :build
                  :fn compile-main-java
                  :ensure "target/main/classes"}
- :deps {org.clojure/clojure {:mvn/version "1.12.3"}
+ :deps {org.clojure/clojure {:mvn/version "1.12.4"}
         org.clojure/core.cache {:mvn/version "1.1.234"}
-        com.github.gateless/futurama {:mvn/version "1.4.1"}
-        com.cnuernber/ham-fisted {:mvn/version "3.000"}
+        com.github.gateless/futurama {:mvn/version "1.4.2"}
+        com.cnuernber/ham-fisted {:mvn/version "3.006"}
         prismatic/schema {:mvn/version "1.4.1"}
-        org.clojure/data.fressian {:mvn/version "1.1.0"}}
+        org.clojure/data.fressian {:mvn/version "1.1.1"}}
 
  ;for more examples of aliases see: https://github.com/seancorfield/dot-clojure
  :aliases
