@@ -231,6 +231,11 @@
           facts (sort-by hash @(:holder mem-serializer))]
       (testing "Ensure restored read-only session"
         (is (instance? ReadOnlyLocalSession ro-restored))
+        (let [component-keys [:rulebase :memory :transport :listeners :get-alphas-fn]
+              components (eng/components ro-restored)]
+          (doseq [component-key component-keys]
+            (is (some? (get components component-key))
+                (str "Read-only restored session should have component: " component-key))))
         (is (thrown? UnsupportedOperationException
                      (fire-rules ro-restored)))
         (is (thrown? UnsupportedOperationException
