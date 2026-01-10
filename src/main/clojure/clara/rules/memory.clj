@@ -20,6 +20,9 @@
   ;; Returns the rulebase associated with the given memory.
   (get-rulebase [memory])
 
+  ;; Returns the root elements in the working memory.
+  (get-root-elements [memory])
+
   ;; Returns the elements assoicated with the given node.
   (get-elements [memory node bindings])
 
@@ -61,6 +64,12 @@
   (get-activations [memory]))
 
 (defprotocol ITransientMemory
+
+  ;; Adds working memory elements to the given working memory at the root node.
+  (add-root-elements! [memory elements])
+
+  ;; Removes working memory elements from the given working memory at the root node.
+  (remove-root-elements! [memory elements])
 
   ;; Adds working memory elements to the given working memory at the given node.
   (add-elements! [memory node join-bindings elements])
@@ -460,6 +469,9 @@
   IMemoryReader
   (get-rulebase [memory] rulebase)
 
+  (get-root-elements [memory]
+    (get-elements-all memory {:id 0}))
+
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
          bindings
@@ -517,6 +529,12 @@
           (vals activation-map)))
 
   ITransientMemory
+  (add-root-elements! [memory elements]
+    (add-elements! memory {:id 0} {} elements))
+
+  (remove-root-elements! [memory elements]
+    (remove-elements! memory {:id 0} {} elements))
+
   (add-elements! [memory node join-bindings elements]
     (hm/compute! alpha-memory (:id node)
                  (fn do-add-bem
@@ -813,6 +831,9 @@
                                   activation-map]
   IMemoryReader
   (get-rulebase [memory] rulebase)
+
+  (get-root-elements [memory]
+    (get-elements-all memory {:id 0}))
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})

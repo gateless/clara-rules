@@ -131,7 +131,7 @@
                           (.startsWith (name k) "?__gen__"))
                         bindings))))))
 
-(defn ^:private gen-all-rule-matches
+(defn gen-all-rule-matches
   [session]
   (when-let [activation-info (i/get-activation-info session)]
     (let [grouped-info (group-by #(-> % :activation :node) activation-info)]
@@ -141,7 +141,7 @@
                     (to-explanations session (map #(-> % :activation :token) v))]))
             grouped-info))))
 
-(defn ^:private gen-fact->explanations
+(defn gen-fact->explanations
   [session]
 
   (let [{:keys [memory rulebase]} (eng/components session)
@@ -352,3 +352,16 @@
         (throw (ex-info "Unable to determine node from function"
                         {:name node-fn
                          :simple-name simple-fn-name}))))))
+
+(defn get-all-facts
+  [session]
+  (let [{:keys [memory rulebase]} (eng/components session)
+        {:keys [production-nodes]} rulebase
+        root-facts (->> (mem/get-root-elements memory)
+                        (map :fact))]
+    (->> (for [rule-node production-nodes
+               token (keys (mem/get-insertions-all memory rule-node))
+               insertion-group (mem/get-insertions memory rule-node token)
+               insertion insertion-group]
+           insertion)
+         (concat root-facts))))

@@ -77,7 +77,7 @@
         ;; to be accessible without generating the entire session inspection map.  However, we want to reuse the functionality
         ;; here without the performance penalty of generating all of the inspection data for the session.  Therefore, for now
         ;; we break the privacy of the function here.  Once issue 286 is completed we should remove this private Var access.
-        fact->explanations (@#'i/gen-fact->explanations session)
+        fact->explanations (i/gen-fact->explanations session)
 
         ;; Produce tuples of the form [inserted-fact {:rule rule :explanation clara.tools.inspect.Explanation}]
         insertion-tuples (into []

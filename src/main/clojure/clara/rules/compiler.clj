@@ -1941,7 +1941,8 @@
                                                 (.add fact-list fact)
                                                 fact-list))))]
 
-    (fn [facts]
+    (fn do-get-alphas
+      [facts]
       (let [roots->facts (java.util.LinkedHashMap.)]
         (doseq [fact facts
                 roots-group (fact-type->roots (wrapped-fact-type-fn fact))]

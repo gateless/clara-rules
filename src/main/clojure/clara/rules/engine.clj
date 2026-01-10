@@ -34,6 +34,11 @@
 ;; An activation for the given production and token.
 (defrecord Activation [node token])
 
+(defn ->RootElement
+  "Creates a root element with a root fact and empty bindings."
+  [fact]
+  (->Element fact {}))
+
 ;; Token with no bindings, used as the root of beta nodes.
 (def empty-token (->Token [] {}))
 
@@ -1969,10 +1974,10 @@
 
             (case op-type
 
-              :insertion
+              :insert
               (do
                 (l/insert-facts! listener nil nil facts)
-
+                (mem/add-root-elements! memory (map ->RootElement facts))
                 (binding [*pending-external-retractions* (atom [])]
                   ;; Bind the external retractions cache so that any logical retractions as a result
                   ;; of these insertions can be cached and executed as a batch instead of eagerly realizing
@@ -1983,10 +1988,10 @@
                     (alpha-activate root fact-group memory transport listener))
                   (external-retract-loop get-alphas-fn memory transport listener)))
 
-              :retraction
+              :retract
               (do
                 (l/retract-facts! listener nil nil facts)
-
+                (mem/remove-root-elements! memory (map ->RootElement facts))
                 (binding [*pending-external-retractions* (atom facts)]
                   (external-retract-loop get-alphas-fn memory transport listener)))))
 
@@ -1995,24 +2000,26 @@
         (let [insertions (sequence
                           (comp (filter (fn [pending-op]
                                           (= (:type pending-op)
-                                             :insertion)))
+                                             :insert)))
                                 (mapcat :facts))
                           pending-operations)
 
               retractions (sequence
                            (comp (filter (fn [pending-op]
                                            (= (:type pending-op)
-                                              :retraction)))
+                                              :retract)))
                                  (mapcat :facts))
                            pending-operations)]
           ;; Insertions should come before retractions so that if we insert and then retract the same
           ;; fact that is not already in the session the end result will be that the session won't have that fact.
           ;; If retractions came first then we'd first retract a fact that isn't in the session, which doesn't do anything,
           ;; and then later we would insert the fact.
+          (mem/add-root-elements! memory (map ->RootElement insertions))
           (doseq [[alpha-roots fact-group] (get-alphas-fn insertions)
                   root alpha-roots]
             (alpha-activate root fact-group memory transport listener))
 
+          (mem/remove-root-elements! memory (map ->RootElement retractions))
           (doseq [[alpha-roots fact-group] (get-alphas-fn retractions)
                   root alpha-roots]
             (alpha-retract root fact-group memory transport listener))
@@ -2046,15 +2053,16 @@
   ISession
   (insert [session facts]
 
-    (let [new-pending-operations (conj pending-operations (uc/->PendingUpdate :insertion
-                                                                              ;; Preserve the behavior prior to https://github.com/cerner/clara-rules/issues/268
-                                                                              ;; , particularly for the Java API, where the caller could freely mutate a
-                                                                              ;; collection of facts after passing it to Clara for the constituent
-                                                                              ;; facts to be inserted or retracted.  If the caller passes a persistent
-                                                                              ;; Clojure collection don't do any additional work.
-                                                                              (if (coll? facts)
-                                                                                facts
-                                                                                (into [] facts))))]
+    (let [new-pending-operations (conj pending-operations
+                                       (uc/->PendingUpdate :insert
+                                                           ;; Preserve the behavior prior to https://github.com/cerner/clara-rules/issues/268
+                                                           ;; , particularly for the Java API, where the caller could freely mutate a
+                                                           ;; collection of facts after passing it to Clara for the constituent
+                                                           ;; facts to be inserted or retracted.  If the caller passes a persistent
+                                                           ;; Clojure collection don't do any additional work.
+                                                           (if (coll? facts)
+                                                             facts
+                                                             (into [] facts))))]
 
       (->LocalSession rulebase
                       memory
@@ -2065,11 +2073,12 @@
 
   (retract [session facts]
 
-    (let [new-pending-operations (conj pending-operations (uc/->PendingUpdate :retraction
-                                                                              ;; As in insert above defend against facts being a mutable collection.
-                                                                              (if (coll? facts)
-                                                                                facts
-                                                                                (into [] facts))))]
+    (let [new-pending-operations (conj pending-operations
+                                       (uc/->PendingUpdate :retract
+                                                           ;; As in insert above defend against facts being a mutable collection.
+                                                           (if (coll? facts)
+                                                             facts
+                                                             (into [] facts))))]
 
       (->LocalSession rulebase
                       memory
