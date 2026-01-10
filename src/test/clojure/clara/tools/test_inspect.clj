@@ -1,6 +1,7 @@
 (ns clara.tools.test-inspect
   (:require [clara.tools.testing-utils :as tu]
-            [clara.tools.inspect :refer [inspect map->Explanation
+            [clara.tools.inspect :refer [inspect inspect-facts
+                                         map->Explanation
                                          explain-activations
                                          with-full-logging
                                          without-full-logging
@@ -48,7 +49,8 @@
                       (insert (->Temperature 90 "MCI"))
                       (fire-rules))
 
-          rule-dump (inspect session)]
+          rule-dump (inspect session)
+          rule-facts (inspect-facts session)]
 
       ;; Retrieve the tokens matching the cold query. This test validates
       ;; the tokens contain the expected matching conditions by retrieving
@@ -65,6 +67,12 @@
              (get-in rule-dump [:rule-matches hot-rule]))
           "Rule matches test")
 
+      (is (= [(->Temperature 15 "MCI")
+              (->Temperature 10 "MCI")
+              (->Temperature 90 "MCI")]
+             (get rule-dump :root-facts))
+          "Root Facts test")
+
       (is (= [{:explanation hot-rule-90-explanation
                :fact        (map->Hot {:temperature 90})}]
              (get-in rule-dump [:insertions hot-rule]))
@@ -74,6 +82,47 @@
       (is (= (frequencies [(->Temperature 15 "MCI") (->Temperature 10 "MCI")])
              (frequencies (get-in rule-dump [:condition-matches (first (:lhs cold-rule))])))
           "Condition matches test")
+
+      (is (= [{:fact (->Temperature 15 "MCI")
+               :rule-id nil
+               :bindings nil
+               :fact-type Temperature
+               :ancestors true}
+              {:fact (->Temperature 10 "MCI")
+               :rule-id nil
+               :bindings nil
+               :fact-type Temperature
+               :ancestors true}
+              {:fact (->Temperature 90 "MCI")
+               :rule-id nil
+               :bindings nil
+               :fact-type Temperature
+               :ancestors true}
+              {:fact (->Cold :too-cold)
+               :rule-id 3
+               :bindings {:?t 10}
+               :fact-type Cold
+               :ancestors true}
+              {:fact (->Cold :too-cold)
+               :rule-id 3
+               :bindings {:?t 15}
+               :fact-type Cold
+               :ancestors true}
+              {:fact (->Hot 90)
+               :rule-id 5
+               :bindings {:?t 90}
+               :fact-type Hot
+               :ancestors true}]
+             (->> (for [{:keys [fact
+                                rule-id
+                                bindings
+                                fact-types]} (:facts rule-facts)]
+                    {:fact fact
+                     :rule-id rule-id
+                     :bindings bindings
+                     :fact-type (first fact-types)
+                     :ancestors (boolean (seq (rest fact-types)))})))
+          "Rule facts test")
 
       ;; Test the :fact->explanations key in the inspected session data.
       (is (= {(map->Cold {:temperature :too-cold}) [{:explanation cold-rule-10-explanation
@@ -422,10 +471,9 @@
 (defn original-constraints->constraints
   [condition-matches]
   (let [rename-fn (fn [form]
-                    (if
-                     (and
-                      (map? form)
-                      (contains? form :original-constraints))
+                    (if (and
+                         (map? form)
+                         (contains? form :original-constraints))
                       (-> form
                           (dissoc :original-constraints)
                           (assoc :constraints (:original-constraints form)))

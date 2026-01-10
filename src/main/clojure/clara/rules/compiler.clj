@@ -1941,6 +1941,8 @@
                                                 (.add fact-list fact)
                                                 fact-list))))]
 
+    ^{:fact-type-fn wrapped-fact-type-fn
+      :ancestors-fn wrapped-ancestors-fn}
     (fn do-get-alphas
       [facts]
       (let [roots->facts (java.util.LinkedHashMap.)]
@@ -1951,12 +1953,12 @@
         (let [return-list (hf/mut-list)
               entries (.entrySet roots->facts)
               entries-it (.iterator entries)]
-          ;; We iterate over the LinkedHashMap manually to avoid potential issues described at http://dev.clojure.org/jira/browse/CLJ-1738
-          ;; where a Java iterator can return the same entry object repeatedly and mutate it after each next() call.  We use mutable lists
-          ;; for performance but wrap them in unmodifiableList to make it clear that the caller is not expected to mutate these lists.
-          ;; Since after this function returns the only reference to the fact lists will be through the unmodifiedList we can depend elsewhere
-          ;; on these lists not changing.  Since the only expected workflow with these lists is to loop through them, not add or remove elements,
-          ;; we don't gain much from using a transient (which can be efficiently converted to a persistent data structure) rather than a mutable type.
+         ;; We iterate over the LinkedHashMap manually to avoid potential issues described at http://dev.clojure.org/jira/browse/CLJ-1738
+         ;; where a Java iterator can return the same entry object repeatedly and mutate it after each next() call.  We use mutable lists
+         ;; for performance but wrap them in unmodifiableList to make it clear that the caller is not expected to mutate these lists.
+         ;; Since after this function returns the only reference to the fact lists will be through the unmodifiedList we can depend elsewhere
+         ;; on these lists not changing.  Since the only expected workflow with these lists is to loop through them, not add or remove elements,
+         ;; we don't gain much from using a transient (which can be efficiently converted to a persistent data structure) rather than a mutable type.
           (loop []
             (when (.hasNext entries-it)
               (let [^java.util.Map$Entry e (.next entries-it)]
