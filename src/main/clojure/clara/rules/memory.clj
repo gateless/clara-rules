@@ -126,6 +126,8 @@
   ;; Converts the transient memory to persistent form.
   (to-persistent! [memory]))
 
+(def ^:private ROOT_NODE_ID 0)
+
 (defn- coll-empty?
   "Returns true if the collection is empty.  Does not call seq due to avoid
   overhead that may cause for non-persistent collection types, e.g.
@@ -464,8 +466,11 @@
   [{:keys [rulebase alpha-memory] :as memory}]
   ;;; If there are any root elements at all then attempt to find them in the memory.
   ;;; Old sessions may not have any root elements stored in memory when serialized.
-  (if (contains? alpha-memory 0)
-    (for [{:keys [fact]} (get-elements-all memory {:id 0})]
+  (if (contains? alpha-memory ROOT_NODE_ID)
+    (for [{:keys [fact]} (sequence
+                          cat
+                          (vals
+                           (get alpha-memory ROOT_NODE_ID {})))]
       fact)
     (let [{:keys [production-nodes query-nodes]} rulebase
           ;;; Gather facts that were inserted by rules
@@ -565,10 +570,10 @@
 
   ITransientMemory
   (add-root-elements! [memory elements]
-    (add-elements! memory {:id 0} {} elements))
+    (add-elements! memory {:id ROOT_NODE_ID} {} elements))
 
   (remove-root-elements! [memory elements]
-    (remove-elements! memory {:id 0} {} elements))
+    (remove-elements! memory {:id ROOT_NODE_ID} {} elements))
 
   (add-elements! [memory node join-bindings elements]
     (hm/compute! alpha-memory (:id node)
