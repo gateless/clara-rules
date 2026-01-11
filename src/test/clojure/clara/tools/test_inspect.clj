@@ -102,12 +102,12 @@
              (frequencies (get-in rule-dump [:condition-matches (first (:lhs cold-rule))])))
           "Condition matches test")
 
-      (is (= [{:fact (->Temperature 15 "MCI")
+      (is (= [{:fact (->Temperature 10 "MCI")
                :rule-id nil
                :bindings nil
                :fact-type Temperature
                :ancestors true}
-              {:fact (->Temperature 10 "MCI")
+              {:fact (->Temperature 15 "MCI")
                :rule-id nil
                :bindings nil
                :fact-type Temperature
@@ -140,7 +140,8 @@
                      :rule-id rule-id
                      :bindings bindings
                      :fact-type (first fact-types)
-                     :ancestors (boolean (seq (rest fact-types)))})))
+                     :ancestors (boolean (seq (rest fact-types)))})
+                  (sort-by (comp (juxt :rule-id (comp :temperature :fact))))))
           "Rule facts test")
 
       ;; Test the :fact->explanations key in the inspected session data.

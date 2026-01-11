@@ -7,6 +7,8 @@
   (:require [clara.rules.engine :as eng]
             [clara.rules.schema :as schema]
             [clara.rules.memory :as mem]
+            [clara.rules.platform :as platform]
+            [clojure.set :as set]
             [clara.tools.internal.inspect :as i]
             [clojure.main :refer [demunge]]
             [schema.core :as s]
@@ -17,7 +19,8 @@
             HashJoinNode
             ExpressionJoinNode
             NegationNode
-            NegationWithJoinFilterNode]))
+            NegationWithJoinFilterNode]
+           [clara.rules.platform FactIdentityWrapper]))
 
 (s/defschema ConditionMatch
   "A structure associating a condition with the facts that matched them.  The fields are:
@@ -167,6 +170,50 @@
              {insertion [{:rule rule
                           :explanation (first (to-explanations session [token]))}]}))))
 
+(defn get-root-facts
+  "Returns all root facts in the session that were not derived from rules."
+  [session]
+  ;;; If there are any root elements at all then attempt to find them in the memory.
+  ;;; Old sessions may not have any root elements stored in memory when serialized.
+  (let [{:keys [rulebase memory pending-operations]} (eng/components session)
+        {:keys [alpha-memory beta-memory accum-memory]} memory
+        {:keys [production-nodes]} rulebase
+        pending-facts (->> (group-by :type pending-operations)
+                           (:insert)
+                           (mapcat :facts)
+                           (map platform/fact-id-wrap))
+        ;;; Gather facts that were inserted by rules
+        rule-facts (for [rule-node production-nodes
+                         match-token (keys (mem/get-insertions-all memory rule-node))
+                         insertion-group (mem/get-insertions memory rule-node match-token)
+                         fact insertion-group]
+                     (platform/fact-id-wrap fact))
+        ;;; Gather facts from alpha memory
+        alpha-facts (->> (vals alpha-memory)
+                         (mapcat vals)
+                         (mapcat identity)
+                         (map :fact)
+                         (map platform/fact-id-wrap))
+        ;;; Gather facts from beta memory
+        beta-facts (->> (vals beta-memory)
+                        (mapcat vals)
+                        (mapcat identity)
+                        (mapcat :matches)
+                        (map first)
+                        (map platform/fact-id-wrap))
+        accum-facts (->> (vals accum-memory)
+                         (mapcat vals)
+                         (mapcat vals)
+                         (mapcat first)
+                         (map platform/fact-id-wrap))
+        ;;; Combine all gathered facts and remove duplicates, using their identity wrappers
+        unique-facts (set (concat pending-facts rule-facts alpha-facts beta-facts accum-facts))
+        ;;; Root facts are those that are not derived from rules
+        root-facts (set/difference unique-facts (set rule-facts))]
+    ;;; Return the unwrapped root facts
+    (for [^FactIdentityWrapper wrapper root-facts]
+      (.wrapped wrapper))))
+
 (def ^{:doc "Return a new session on which information will be gathered for optional inspection keys.
        This can significantly increase memory consumption since retracted facts
        cannot be garbage collected as normally."}
@@ -236,7 +283,7 @@
                                                    (keys (mem/get-insertions-all memory rule-node)))])
                           (into {}))
         condition-matches (get-condition-matches (vals id-to-node) memory)
-        root-facts (mem/get-root-facts memory)
+        root-facts (get-root-facts session)
         insertions (->> (for [[rule rule-node] rule-to-nodes]
                           [rule
                            (for [token (keys (mem/get-insertions-all memory rule-node))
@@ -381,7 +428,7 @@
         {:keys [fact-type-fn
                 ancestors-fn]} (meta get-alphas-fn)
         {:keys [production-nodes]} rulebase
-        root-facts (for [fact (mem/get-root-facts memory)
+        root-facts (for [fact (get-root-facts session)
                          :let [fact-type (fact-type-fn fact)
                                ancestors (ancestors-fn fact-type)]]
                      {:fact fact

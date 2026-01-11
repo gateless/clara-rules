@@ -7,6 +7,7 @@
             [clara.rules.platform :as platform]
             [clara.rules.update-cache.core :as uc]
             [clara.rules.update-cache.cancelling :as ca]
+            [ham-fisted.api :as hf]
             [futurama.core :refer [async
                                    async?
                                    async-cancelled?
@@ -236,13 +237,13 @@
   This is similar to the function of the pending-updates in the fire-rules* loop."
   [get-alphas-fn memory transport listener]
   (loop []
-    (let [retractions (deref *pending-external-retractions*)
-          ;; We have already obtained a direct reference to the facts to be
-          ;; retracted in this iteration of the loop outside the cache.  Now reset
-          ;; the cache.  The retractions we execute may cause new retractions to be queued
-          ;; up, in which case the loop will execute again.
-          _ (reset! *pending-external-retractions* [])]
-      (doseq [[alpha-roots fact-group] (get-alphas-fn retractions)
+    (let [retractions (deref *pending-external-retractions*)]
+      ;; We have already obtained a direct reference to the facts to be
+      ;; retracted in this iteration of the loop outside the cache.  Now reset
+      ;; the cache.  The retractions we execute may cause new retractions to be queued
+      ;; up, in which case the loop will execute again.
+      (reset! *pending-external-retractions* [])
+      (doseq [[alpha-roots fact-group] (first (get-alphas-fn retractions))
               root alpha-roots]
         (alpha-retract root fact-group memory transport listener))
       (when (-> *pending-external-retractions* deref not-empty)
@@ -256,7 +257,7 @@
     (throw (ex-info "session pending updates missing:" {:session current-session
                                                         :label label})))
   (letfn [(flush-all [current-session flushed-items?]
-            (let [{:keys [rulebase transient-memory transport insertions get-alphas-fn listener]} current-session
+            (let [{:keys [transient-memory transport get-alphas-fn listener]} current-session
                   pending-updates (-> current-session :pending-updates uc/get-updates-and-reset!)]
 
               (if (empty? pending-updates)
@@ -264,7 +265,7 @@
                 (do
                   (doseq [partition pending-updates
                           :let [facts (mapcat :facts partition)]
-                          [alpha-roots fact-group] (get-alphas-fn facts)
+                          [alpha-roots fact-group] (first (get-alphas-fn facts))
                           root alpha-roots]
 
                     (if (= :insert (:type (first partition)))
@@ -299,7 +300,7 @@
   This should only be used for facts explicitly retracted in a RHS.
   It should not be used for retractions that occur as part of automatic truth maintenance."
   [facts]
-  (let [{:keys [rulebase transient-memory transport insertions get-alphas-fn listener]} *current-session*
+  (let [{:keys [transient-memory transport insertions get-alphas-fn listener]} *current-session*
         {:keys [node token]} *rule-context*]
     ;; Update the count so the rule engine will know when we have normalized.
     (swap! insertions + (count facts))
@@ -307,7 +308,7 @@
     (when listener
       (l/retract-facts! listener node token facts))
 
-    (doseq [[alpha-roots fact-group] (get-alphas-fn facts)
+    (doseq [[alpha-roots fact-group] (first (get-alphas-fn facts))
             root alpha-roots]
 
       (alpha-retract root fact-group transient-memory transport listener))))
@@ -316,7 +317,7 @@
   "Perform the actual fact insertion, optionally making them unconditional.  This should only
    be called once per rule activation for logical insertions."
   [facts unconditional]
-  (let [{:keys [rulebase transient-memory transport insertions get-alphas-fn listener]} *current-session*
+  (let [{:keys [transient-memory insertions listener]} *current-session*
         {:keys [node token]} *rule-context*]
 
     ;; Update the insertion count.
@@ -1977,21 +1978,23 @@
               :insert
               (do
                 (l/insert-facts! listener nil nil facts)
-                (mem/add-root-elements! memory (map ->RootElement facts))
                 (binding [*pending-external-retractions* (atom [])]
                   ;; Bind the external retractions cache so that any logical retractions as a result
                   ;; of these insertions can be cached and executed as a batch instead of eagerly realizing
                   ;; them.  An external insertion of a fact that matches
                   ;; a negation or accumulator condition can cause logical retractions.
-                  (doseq [[alpha-roots fact-group] (get-alphas-fn facts)
-                          root alpha-roots]
-                    (alpha-activate root fact-group memory transport listener))
+                  (let [[matched-alphas unmatched-facts] (get-alphas-fn facts)]
+                    (doseq [[alpha-roots fact-group] matched-alphas
+                            root alpha-roots]
+                      (alpha-activate root fact-group memory transport listener))
+                    (when (seq unmatched-facts)
+                      (mem/add-elements! memory mem/ROOT_NODE {}
+                                         (map ->RootElement unmatched-facts))))
                   (external-retract-loop get-alphas-fn memory transport listener)))
 
               :retract
               (do
                 (l/retract-facts! listener nil nil facts)
-                (mem/remove-root-elements! memory (map ->RootElement facts))
                 (binding [*pending-external-retractions* (atom facts)]
                   (external-retract-loop get-alphas-fn memory transport listener)))))
 
@@ -2009,20 +2012,24 @@
                                            (= (:type pending-op)
                                               :retract)))
                                  (mapcat :facts))
-                           pending-operations)]
+                           pending-operations)
+              [matched-alphas unmatched-facts] (get-alphas-fn insertions)]
           ;; Insertions should come before retractions so that if we insert and then retract the same
           ;; fact that is not already in the session the end result will be that the session won't have that fact.
           ;; If retractions came first then we'd first retract a fact that isn't in the session, which doesn't do anything,
           ;; and then later we would insert the fact.
-          (mem/add-root-elements! memory (map ->RootElement insertions))
-          (doseq [[alpha-roots fact-group] (get-alphas-fn insertions)
+          (doseq [[alpha-roots fact-group] matched-alphas
                   root alpha-roots]
             (alpha-activate root fact-group memory transport listener))
 
-          (mem/remove-root-elements! memory (map ->RootElement retractions))
-          (doseq [[alpha-roots fact-group] (get-alphas-fn retractions)
+          (when (seq unmatched-facts)
+            (mem/add-elements! memory mem/ROOT_NODE {}
+                               (map ->RootElement unmatched-facts)))
+
+          (doseq [[alpha-roots fact-group] (first (get-alphas-fn retractions))
                   root alpha-roots]
             (alpha-retract root fact-group memory transport listener))
+
           (fire-rules-handler session opts))))))
 
 (defn- query*
@@ -2094,11 +2101,10 @@
   (fire-rules [session opts]
     (let [transient-memory (mem/to-transient memory)
           transient-listener (l/to-transient listener)]
-      (fire-rules*
-       rulebase transient-memory transport
-       transient-listener get-alphas-fn
-       pending-operations opts
-       fire-rules!)
+      (fire-rules* rulebase transient-memory transport
+                   transient-listener get-alphas-fn
+                   pending-operations opts
+                   fire-rules!)
       (->LocalSession rulebase
                       (mem/to-persistent! transient-memory)
                       transport
@@ -2112,11 +2118,10 @@
     (async
      (let [transient-memory (mem/to-transient memory)
            transient-listener (l/to-transient listener)]
-       (<! (fire-rules*
-            rulebase transient-memory transport
-            transient-listener get-alphas-fn
-            pending-operations opts
-            fire-rules-async!))
+       (<! (fire-rules* rulebase transient-memory transport
+                        transient-listener get-alphas-fn
+                        pending-operations opts
+                        fire-rules-async!))
        (->LocalSession rulebase
                        (mem/to-persistent! transient-memory)
                        transport

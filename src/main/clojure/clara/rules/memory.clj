@@ -1,9 +1,7 @@
 (ns clara.rules.memory
   "This namespace is for internal use and may move in the future.
   Specification and default implementation of working memory"
-  (:require [clara.rules.platform :as platform]
-            [clojure.set :as set]
-            [ham-fisted.api :as hf]
+  (:require [ham-fisted.api :as hf]
             [ham-fisted.mut-map :as hm])
   (:import [java.util
             Map
@@ -13,7 +11,6 @@
             NavigableMap
             PriorityQueue
             TreeMap]
-           [clara.rules.platform FactIdentityWrapper]
            [ham_fisted MutableMap]))
 
 (defprotocol IPersistentMemory
@@ -23,8 +20,9 @@
   ;; Returns the rulebase associated with the given memory.
   (get-rulebase [memory])
 
-  ;; Returns the root elements in the working memory.
-  (get-root-facts [memory])
+  ;; Returns the unmatched root element facts in the working memory,
+  ;; useful to get facts that were inserted but did not match any alpha roots.
+  (get-unmatched-root-facts [memory])
 
   ;; Returns the elements assoicated with the given node.
   (get-elements [memory node bindings])
@@ -67,12 +65,6 @@
   (get-activations [memory]))
 
 (defprotocol ITransientMemory
-
-  ;; Adds working memory elements to the given working memory at the root node.
-  (add-root-elements! [memory elements])
-
-  ;; Removes working memory elements from the given working memory at the root node.
-  (remove-root-elements! [memory elements])
 
   ;; Adds working memory elements to the given working memory at the given node.
   (add-elements! [memory node join-bindings elements])
@@ -126,7 +118,8 @@
   ;; Converts the transient memory to persistent form.
   (to-persistent! [memory]))
 
-(def ^:private ROOT_NODE_ID 0)
+(def ROOT_NODE_ID 0)
+(def ROOT_NODE {:id ROOT_NODE_ID})
 
 (defn- coll-empty?
   "Returns true if the collection is empty.  Does not call seq due to avoid
@@ -461,42 +454,6 @@
 (declare ->PersistentLocalMemory)
 
 ;;; Transient local memory implementation. Typically only persistent memory will be visible externally.
-
-(defn- get-root-facts-impl
-  [{:keys [rulebase alpha-memory] :as memory}]
-  ;;; If there are any root elements at all then attempt to find them in the memory.
-  ;;; Old sessions may not have any root elements stored in memory when serialized.
-  (if (contains? alpha-memory ROOT_NODE_ID)
-    (for [{:keys [fact]} (sequence
-                          cat
-                          (vals
-                           (get alpha-memory ROOT_NODE_ID {})))]
-      fact)
-    (let [{:keys [production-nodes query-nodes]} rulebase
-          ;;; Gather facts that were inserted by rules
-          rule-facts (for [rule-node production-nodes
-                           match-token (keys (get-insertions-all memory rule-node))
-                           insertion-group (get-insertions memory rule-node match-token)
-                           fact insertion-group]
-                       (platform/fact-id-wrap fact))
-          ;;; Gather facts that were matched by rules
-          rule-matches (for [rule-node production-nodes
-                             {:keys [matches]} (keys (get-insertions-all memory rule-node))
-                             [fact] matches]
-                         (platform/fact-id-wrap fact))
-          ;;; Gather facts that were matched by queries
-          query-matches (for [rule-node (vals query-nodes)
-                              {:keys [matches]} (get-tokens-all memory rule-node)
-                              [fact] matches]
-                          (platform/fact-id-wrap fact))
-          ;;; Combine all gathered facts and remove duplicates, using their identity wrappers
-          unique-facts (set (concat rule-facts rule-matches query-matches))
-          ;;; Root facts are those that are not derived from rules
-          root-facts (set/difference unique-facts (set rule-facts))]
-      ;;; Return the unwrapped root facts
-      (for [^FactIdentityWrapper wrapper root-facts]
-        (.wrapped wrapper)))))
-
 (deftype TransientLocalMemory [rulebase
                                activation-group-sort-fn
                                activation-group-fn
@@ -509,8 +466,9 @@
   IMemoryReader
   (get-rulebase [memory] rulebase)
 
-  (get-root-facts [memory]
-    (get-root-facts-impl memory))
+  (get-unmatched-root-facts [memory]
+    (->> (get-elements-all memory ROOT_NODE)
+         (map :fact)))
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
@@ -569,12 +527,6 @@
           (vals activation-map)))
 
   ITransientMemory
-  (add-root-elements! [memory elements]
-    (add-elements! memory {:id ROOT_NODE_ID} {} elements))
-
-  (remove-root-elements! [memory elements]
-    (remove-elements! memory {:id ROOT_NODE_ID} {} elements))
-
   (add-elements! [memory node join-bindings elements]
     (hm/compute! alpha-memory (:id node)
                  (fn do-add-bem
@@ -872,8 +824,9 @@
   IMemoryReader
   (get-rulebase [memory] rulebase)
 
-  (get-root-facts [memory]
-    (get-root-facts-impl memory))
+  (get-unmatched-root-facts [memory]
+    (->> (get-elements-all memory ROOT_NODE)
+         (map :fact)))
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
