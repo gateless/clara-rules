@@ -47,9 +47,25 @@
   (hashCode [this] hash-code))
 
 (defn jeq-wrap
-  "wraps the value with a JavaEqualityWrapper"
+  "Wraps the value with a JavaEqualityWrapper"
   ^JavaEqualityWrapper [value]
   (JavaEqualityWrapper. value (hash value)))
+
+;;; This class wraps objects to ensure identity semantics are used for equality
+;;; and hash code. This is used in places where we want to distinguish between
+;;; different instances of equal objects, such as when comparing facts.
+;;; This class also accepts and stores the hash code, since it almost always will be used 
+;;; once and generally more than once.
+(deftype FactIdentityWrapper [wrapped ^int hash-code]
+  Object
+  (equals [this other]
+    (identical? wrapped (.wrapped ^FactIdentityWrapper other)))
+  (hashCode [this] hash-code))
+
+(defn fact-id-wrap
+  "Wraps the value with a FactIdentityWrapper"
+  ^FactIdentityWrapper [value]
+  (FactIdentityWrapper. value (hash value)))
 
 (defn group-by-seq
   "Groups the items of the given coll by f to each item.  Returns a seq of tuples of the form

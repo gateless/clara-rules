@@ -219,40 +219,38 @@
   [session]
   (let [{:keys [memory rulebase]} (eng/components session)
         {:keys [production-nodes query-nodes id-to-node]} rulebase
-
         ;; Map of queries to their nodes in the network.
-        query-to-nodes (into {} (for [[query-name query-node] query-nodes]
-                                  [(:query query-node) query-node]))
-
+        query-to-nodes (->> (for [[query-name query-node] query-nodes]
+                              [(:query query-node) query-node])
+                            (into {}))
+        query-matches (->> (for [[query query-node] query-to-nodes]
+                             [query (to-explanations session
+                                                     (mem/get-tokens-all memory query-node))])
+                           (into {}))
         ;; Map of rules to their nodes in the network.
-        rule-to-nodes (into {} (for [rule-node production-nodes]
-                                 [(:production rule-node) rule-node]))
-
-        base-info {:rule-matches (into {}
-                                       (for [[rule rule-node] rule-to-nodes]
-                                         [rule (to-explanations session
-                                                                (keys (mem/get-insertions-all memory rule-node)))]))
-
-                   :query-matches (into {}
-                                        (for [[query query-node] query-to-nodes]
-                                          [query (to-explanations session
-                                                                  (mem/get-tokens-all memory query-node))]))
-
-                   :condition-matches (get-condition-matches (vals id-to-node) memory)
-
-                   :root-facts (for [{:keys [fact]} (mem/get-root-elements memory)]
-                                 fact)
-
-                   :insertions (into {}
-                                     (for [[rule rule-node] rule-to-nodes]
-                                       [rule
-                                        (for [token (keys (mem/get-insertions-all memory rule-node))
-                                              insertion-group (get (mem/get-insertions-all memory rule-node) token)
-                                              insertion insertion-group]
-                                          {:explanation (first (to-explanations session [token])) :fact insertion})]))
-
-                   :fact->explanations (into {} (gen-fact->explanations session))}]
-
+        rule-to-nodes (->> (for [rule-node production-nodes]
+                             [(:production rule-node) rule-node])
+                           (into {}))
+        rule-matches (->> (for [[rule rule-node] rule-to-nodes]
+                            [rule (to-explanations session
+                                                   (keys (mem/get-insertions-all memory rule-node)))])
+                          (into {}))
+        condition-matches (get-condition-matches (vals id-to-node) memory)
+        root-facts (mem/get-root-facts memory)
+        insertions (->> (for [[rule rule-node] rule-to-nodes]
+                          [rule
+                           (for [token (keys (mem/get-insertions-all memory rule-node))
+                                 insertion-group (get (mem/get-insertions-all memory rule-node) token)
+                                 insertion insertion-group]
+                             {:explanation (first (to-explanations session [token])) :fact insertion})])
+                        (into {}))
+        fact-explanations (into {} (gen-fact->explanations session))
+        base-info {:rule-matches rule-matches
+                   :query-matches query-matches
+                   :condition-matches condition-matches
+                   :root-facts root-facts
+                   :insertions insertions
+                   :fact->explanations fact-explanations}]
     (if-let [unfiltered-rule-matches (gen-all-rule-matches session)]
       (assoc base-info :unfiltered-rule-matches unfiltered-rule-matches)
       base-info)))
@@ -383,7 +381,7 @@
         {:keys [fact-type-fn
                 ancestors-fn]} (meta get-alphas-fn)
         {:keys [production-nodes]} rulebase
-        root-facts (for [{:keys [fact]} (mem/get-root-elements memory)
+        root-facts (for [fact (mem/get-root-facts memory)
                          :let [fact-type (fact-type-fn fact)
                                ancestors (ancestors-fn fact-type)]]
                      {:fact fact

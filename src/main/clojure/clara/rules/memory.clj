@@ -1,7 +1,9 @@
 (ns clara.rules.memory
   "This namespace is for internal use and may move in the future.
   Specification and default implementation of working memory"
-  (:require [ham-fisted.api :as hf]
+  (:require [clara.rules.platform :as platform]
+            [clojure.set :as set]
+            [ham-fisted.api :as hf]
             [ham-fisted.mut-map :as hm])
   (:import [java.util
             Map
@@ -11,6 +13,7 @@
             NavigableMap
             PriorityQueue
             TreeMap]
+           [clara.rules.platform FactIdentityWrapper]
            [ham_fisted MutableMap]))
 
 (defprotocol IPersistentMemory
@@ -21,7 +24,7 @@
   (get-rulebase [memory])
 
   ;; Returns the root elements in the working memory.
-  (get-root-elements [memory])
+  (get-root-facts [memory])
 
   ;; Returns the elements assoicated with the given node.
   (get-elements [memory node bindings])
@@ -457,6 +460,38 @@
 
 ;;; Transient local memory implementation. Typically only persistent memory will be visible externally.
 
+(defn- get-root-facts-impl
+  [{:keys [rulebase alpha-memory] :as memory}]
+  ;;; If there are any root elements at all then attempt to find them in the memory.
+  ;;; Old sessions may not have any root elements stored in memory when serialized.
+  (if (contains? alpha-memory 0)
+    (for [{:keys [fact]} (get-elements-all memory {:id 0})]
+      fact)
+    (let [{:keys [production-nodes query-nodes]} rulebase
+          ;;; Gather facts that were inserted by rules
+          rule-facts (for [rule-node production-nodes
+                           match-token (keys (get-insertions-all memory rule-node))
+                           insertion-group (get-insertions memory rule-node match-token)
+                           fact insertion-group]
+                       (platform/fact-id-wrap fact))
+          ;;; Gather facts that were matched by rules
+          rule-matches (for [rule-node production-nodes
+                             {:keys [matches]} (keys (get-insertions-all memory rule-node))
+                             [fact] matches]
+                         (platform/fact-id-wrap fact))
+          ;;; Gather facts that were matched by queries
+          query-matches (for [rule-node (vals query-nodes)
+                              {:keys [matches]} (get-tokens-all memory rule-node)
+                              [fact] matches]
+                          (platform/fact-id-wrap fact))
+          ;;; Combine all gathered facts and remove duplicates, using their identity wrappers
+          unique-facts (set (concat rule-facts rule-matches query-matches))
+          ;;; Root facts are those that are not derived from rules
+          root-facts (set/difference unique-facts (set rule-facts))]
+      ;;; Return the unwrapped root facts
+      (for [^FactIdentityWrapper wrapper root-facts]
+        (.wrapped wrapper)))))
+
 (deftype TransientLocalMemory [rulebase
                                activation-group-sort-fn
                                activation-group-fn
@@ -469,8 +504,8 @@
   IMemoryReader
   (get-rulebase [memory] rulebase)
 
-  (get-root-elements [memory]
-    (get-elements-all memory {:id 0}))
+  (get-root-facts [memory]
+    (get-root-facts-impl memory))
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
@@ -832,8 +867,8 @@
   IMemoryReader
   (get-rulebase [memory] rulebase)
 
-  (get-root-elements [memory]
-    (get-elements-all memory {:id 0}))
+  (get-root-facts [memory]
+    (get-root-facts-impl memory))
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})

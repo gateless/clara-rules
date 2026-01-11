@@ -7,6 +7,7 @@
                                          without-full-logging
                                          node-fn-name->production-name]]
             [clara.rules :refer [insert fire-rules insert! insert-unconditional! retract query]]
+            [clara.rules.engine :as eng]
             [clara.rules.accumulators :as acc]
             [schema.test :as st]
             [clojure.walk :as w]
@@ -48,8 +49,18 @@
                       (insert (->Temperature 10 "MCI"))
                       (insert (->Temperature 90 "MCI"))
                       (fire-rules))
-
+          session' (-> (eng/components session)
+                       (update-in [:memory :alpha-memory] dissoc 0)
+                       (eng/assemble))
+          session-ro (-> (eng/components session)
+                         (eng/assemble-read-only))
+          session-ro' (-> (eng/components session)
+                          (update-in [:memory :alpha-memory] dissoc 0)
+                          (eng/assemble-read-only))
           rule-dump (inspect session)
+          rule-dump' (inspect session')
+          rule-dump-ro (inspect session-ro)
+          rule-dump-ro' (inspect session-ro')
           rule-facts (inspect-facts session)]
 
       ;; Retrieve the tokens matching the cold query. This test validates
@@ -67,10 +78,18 @@
              (get-in rule-dump [:rule-matches hot-rule]))
           "Rule matches test")
 
-      (is (= [(->Temperature 15 "MCI")
-              (->Temperature 10 "MCI")
-              (->Temperature 90 "MCI")]
-             (get rule-dump :root-facts))
+      (is (= (sort-by :temperature
+                      [(->Temperature 15 "MCI")
+                       (->Temperature 10 "MCI")
+                       (->Temperature 90 "MCI")])
+             (sort-by :temperature
+                      (get rule-dump :root-facts))
+             (sort-by :temperature
+                      (get rule-dump' :root-facts))
+             (sort-by :temperature
+                      (get rule-dump-ro :root-facts))
+             (sort-by :temperature
+                      (get rule-dump-ro' :root-facts)))
           "Root Facts test")
 
       (is (= [{:explanation hot-rule-90-explanation
