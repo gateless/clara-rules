@@ -65,7 +65,7 @@
 (defn fact-id-wrap
   "Wraps the value with a FactIdentityWrapper"
   ^FactIdentityWrapper [value]
-  (FactIdentityWrapper. value (hash value)))
+  (FactIdentityWrapper. value (System/identityHashCode value)))
 
 (defn group-by-seq
   "Groups the items of the given coll by f to each item.  Returns a seq of tuples of the form
