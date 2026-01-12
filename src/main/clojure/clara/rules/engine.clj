@@ -242,7 +242,7 @@
       ;; the cache.  The retractions we execute may cause new retractions to be queued
       ;; up, in which case the loop will execute again.
       (reset! *pending-external-retractions* [])
-      (doseq [[alpha-roots fact-group] (first (get-alphas-fn retractions))
+      (doseq [[alpha-roots fact-group] (get-alphas-fn retractions)
               root alpha-roots]
         (alpha-retract root fact-group memory transport listener))
       (when (-> *pending-external-retractions* deref not-empty)
@@ -264,7 +264,7 @@
                 (do
                   (doseq [partition pending-updates
                           :let [facts (mapcat :facts partition)]
-                          [alpha-roots fact-group] (first (get-alphas-fn facts))
+                          [alpha-roots fact-group] (get-alphas-fn facts)
                           root alpha-roots]
 
                     (if (= :insert (:type (first partition)))
@@ -307,7 +307,7 @@
     (when listener
       (l/retract-facts! listener node token facts))
 
-    (doseq [[alpha-roots fact-group] (first (get-alphas-fn facts))
+    (doseq [[alpha-roots fact-group] (get-alphas-fn facts)
             root alpha-roots]
 
       (alpha-retract root fact-group transient-memory transport listener))))
@@ -1977,23 +1977,29 @@
               :insert
               (do
                 (l/insert-facts! listener nil nil facts)
+
+                (when (seq facts)
+                  (mem/add-elements! memory mem/ROOT_NODE {}
+                                     (map ->RootElement facts)))
+
                 (binding [*pending-external-retractions* (atom [])]
                   ;; Bind the external retractions cache so that any logical retractions as a result
                   ;; of these insertions can be cached and executed as a batch instead of eagerly realizing
                   ;; them.  An external insertion of a fact that matches
                   ;; a negation or accumulator condition can cause logical retractions.
-                  (let [[matched-alphas unmatched-facts] (get-alphas-fn facts)]
-                    (doseq [[alpha-roots fact-group] matched-alphas
-                            root alpha-roots]
-                      (alpha-activate root fact-group memory transport listener))
-                    (when (seq unmatched-facts)
-                      (mem/add-elements! memory mem/ROOT_NODE {}
-                                         (map ->RootElement unmatched-facts))))
+                  (doseq [[alpha-roots fact-group] (get-alphas-fn facts)
+                          root alpha-roots]
+                    (alpha-activate root fact-group memory transport listener))
                   (external-retract-loop get-alphas-fn memory transport listener)))
 
               :retract
               (do
                 (l/retract-facts! listener nil nil facts)
+
+                (when (seq facts)
+                  (mem/remove-elements! memory mem/ROOT_NODE {}
+                                        (map ->RootElement facts)))
+
                 (binding [*pending-external-retractions* (atom facts)]
                   (external-retract-loop get-alphas-fn memory transport listener)))))
 
@@ -2011,21 +2017,25 @@
                                            (= (:type pending-op)
                                               :retract)))
                                  (mapcat :facts))
-                           pending-operations)
-              [matched-alphas unmatched-facts] (get-alphas-fn insertions)]
+                           pending-operations)]
           ;; Insertions should come before retractions so that if we insert and then retract the same
           ;; fact that is not already in the session the end result will be that the session won't have that fact.
           ;; If retractions came first then we'd first retract a fact that isn't in the session, which doesn't do anything,
           ;; and then later we would insert the fact.
-          (doseq [[alpha-roots fact-group] matched-alphas
+
+          (when (seq insertions)
+            (mem/add-elements! memory mem/ROOT_NODE {}
+                               (map ->RootElement insertions)))
+
+          (doseq [[alpha-roots fact-group] (get-alphas-fn insertions)
                   root alpha-roots]
             (alpha-activate root fact-group memory transport listener))
 
-          (when (seq unmatched-facts)
-            (mem/add-elements! memory mem/ROOT_NODE {}
-                               (map ->RootElement unmatched-facts)))
+          (when (seq retractions)
+            (mem/remove-elements! memory mem/ROOT_NODE {}
+                                  (map ->RootElement retractions)))
 
-          (doseq [[alpha-roots fact-group] (first (get-alphas-fn retractions))
+          (doseq [[alpha-roots fact-group] (get-alphas-fn retractions)
                   root alpha-roots]
             (alpha-retract root fact-group memory transport listener))
 

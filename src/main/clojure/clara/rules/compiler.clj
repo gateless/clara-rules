@@ -1889,9 +1889,7 @@
 
 (defn create-get-alphas-fn
   "Returns a function that given a sequence of facts,
-  returns a tuple of:
-  - a list of tuples with each containing alpha nodes and the facts they accept.
-  - a list of facts that did not match any alpha nodes."
+  returns a list of tuples with each containing alpha nodes and the facts they accept."
   [fact-type-fn ancestors-fn alpha-roots]
   (let [;; If a customized fact-type-fn is provided,
         ;; we must use a specialized grouping function
@@ -1946,16 +1944,12 @@
       :ancestors-fn wrapped-ancestors-fn}
     (fn do-get-alphas
       [facts]
-      (let [roots->facts (java.util.LinkedHashMap.)
-            unmatched-facts (hf/mut-list)]
-        (doseq [fact facts]
-          ;;; For each fact, find the matching alpha roots based on its type and ancestors.
-          (if-let [match-roots (seq (fact-type->roots (wrapped-fact-type-fn fact)))]
-            (doseq [roots-group match-roots]
-              ;;; Update the map of roots to facts
-              (update-roots->facts! roots->facts roots-group fact))
-            ;;; No matching roots, add to orphans
-            (.add unmatched-facts fact)))
+      (let [roots->facts (java.util.LinkedHashMap.)]
+        (doseq [fact facts
+                ;;; For each fact, find the matching alpha roots based on its type and ancestors.
+                roots-group (fact-type->roots (wrapped-fact-type-fn fact))]
+          ;;; Update the map of roots to facts
+          (update-roots->facts! roots->facts roots-group fact))
 
         (let [matched-alphas (hf/mut-list)
               entries (.entrySet roots->facts)
@@ -1973,7 +1967,7 @@
                 (.add matched-alphas [(-> e ^AlphaRootsWrapper (.getKey) (.wrapped))
                                       (hf/persistent! (.getValue e))])
                 (recur))))
-          [(hf/persistent! matched-alphas) (hf/persistent! unmatched-facts)])))))
+          (hf/persistent! matched-alphas))))))
 
 (defn create-ancestors-fn
   [{:keys [ancestors-fn
