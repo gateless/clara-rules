@@ -7,7 +7,6 @@
             [clara.rules.platform :as platform]
             [clara.rules.update-cache.core :as uc]
             [clara.rules.update-cache.cancelling :as ca]
-            [ham-fisted.api :as hf]
             [futurama.core :refer [async
                                    async?
                                    async-cancelled?

@@ -1889,7 +1889,7 @@
 
 (defn create-get-alphas-fn
   "Returns a function that given a sequence of facts,
-  returns a tuple of::
+  returns a tuple of:
   - a list of tuples with each containing alpha nodes and the facts they accept.
   - a list of facts that did not match any alpha nodes."
   [fact-type-fn ancestors-fn alpha-roots]
