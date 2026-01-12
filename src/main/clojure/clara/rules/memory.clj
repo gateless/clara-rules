@@ -20,10 +20,6 @@
   ;; Returns the rulebase associated with the given memory.
   (get-rulebase [memory])
 
-  ;; Returns the unmatched root element facts in the working memory,
-  ;; useful to get facts that were inserted but did not match any alpha roots.
-  (get-unmatched-root-facts [memory])
-
   ;; Returns the elements assoicated with the given node.
   (get-elements [memory node bindings])
 
@@ -466,10 +462,6 @@
   IMemoryReader
   (get-rulebase [memory] rulebase)
 
-  (get-unmatched-root-facts [memory]
-    (->> (get-elements-all memory ROOT_NODE)
-         (map :fact)))
-
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
          bindings
@@ -823,10 +815,6 @@
                                   activation-map]
   IMemoryReader
   (get-rulebase [memory] rulebase)
-
-  (get-unmatched-root-facts [memory]
-    (->> (get-elements-all memory ROOT_NODE)
-         (map :fact)))
 
   (get-elements [memory node bindings]
     (get (get alpha-memory (:id node) {})
