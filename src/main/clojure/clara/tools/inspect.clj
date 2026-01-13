@@ -7,6 +7,8 @@
   (:require [clara.rules.engine :as eng]
             [clara.rules.schema :as schema]
             [clara.rules.memory :as mem]
+            [clara.rules.platform :as platform]
+            [clojure.set :as set]
             [clara.tools.internal.inspect :as i]
             [clojure.main :refer [demunge]]
             [schema.core :as s]
@@ -17,7 +19,8 @@
             HashJoinNode
             ExpressionJoinNode
             NegationNode
-            NegationWithJoinFilterNode]))
+            NegationWithJoinFilterNode]
+           [clara.rules.platform FactIdentityWrapper]))
 
 (s/defschema ConditionMatch
   "A structure associating a condition with the facts that matched them.  The fields are:
@@ -55,13 +58,24 @@
                           bindings :- {s/Keyword s/Any}]) ; Bound variables
 
 ;; Schema of an inspected rule session.
-(def InspectionSchema
+(def RulesInspectionSchema
   {:rule-matches {schema/Rule [Explanation]}
    :query-matches {schema/Query [Explanation]}
    :condition-matches {schema/Condition [s/Any]}
-   :insertions {schema/Rule [{:explanation Explanation :fact s/Any}]}})
+   :root-facts [s/Any]
+   :insertions {schema/Rule [{:explanation Explanation :fact s/Any}]}
+   :fact->explanations {s/Any [{:rule schema/Rule
+                                :explanation Explanation}]}
+   (s/optional-key :unfiltered-rule-matches) {schema/Rule [Explanation]}})
 
-(defn- get-condition-matches
+(def FactsInspectionSchema
+  {:rules {s/Int schema/Rule}
+   :facts [{:fact s/Any
+            (s/optional-key :rule-id) s/Int
+            (s/optional-key :bindings) {s/Keyword s/Any}
+            :fact-types [s/Any]}]})
+
+(defn get-condition-matches
   "Returns facts matching each condition"
   [nodes memory]
   (let [node-class->node-type (fn [node]
@@ -98,7 +112,7 @@
      {}
      join-node-ids)))
 
-(defn- to-explanations
+(defn to-explanations
   "Helper function to convert tokens to explanation records."
   [session tokens]
   (let [memory (-> session eng/components :memory)
@@ -131,7 +145,7 @@
                           (.startsWith (name k) "?__gen__"))
                         bindings))))))
 
-(defn ^:private gen-all-rule-matches
+(defn gen-all-rule-matches
   [session]
   (when-let [activation-info (i/get-activation-info session)]
     (let [grouped-info (group-by #(-> % :activation :node) activation-info)]
@@ -141,11 +155,11 @@
                     (to-explanations session (map #(-> % :activation :token) v))]))
             grouped-info))))
 
-(defn ^:private gen-fact->explanations
+(defn gen-fact->explanations
   [session]
 
   (let [{:keys [memory rulebase]} (eng/components session)
-        {:keys [productions production-nodes query-nodes]} rulebase
+        {:keys [production-nodes]} rulebase
         rule-to-rule-node (into {} (for [rule-node production-nodes]
                                      [(:production rule-node) rule-node]))]
     (apply merge-with into
@@ -156,6 +170,50 @@
              {insertion [{:rule rule
                           :explanation (first (to-explanations session [token]))}]}))))
 
+(defn get-root-facts
+  "Returns all root facts in the session that were not derived from rules."
+  [session]
+  ;;; If there are any root elements at all then attempt to find them in the memory.
+  ;;; Old sessions may not have any root elements stored in memory when serialized.
+  (let [{:keys [rulebase memory pending-operations]} (eng/components session)
+        {:keys [alpha-memory beta-memory accum-memory]} memory
+        {:keys [production-nodes]} rulebase
+        pending-facts (->> (group-by :type pending-operations)
+                           (:insert)
+                           (mapcat :facts)
+                           (map platform/fact-id-wrap))
+        ;;; Gather facts that were inserted by rules
+        rule-facts (for [rule-node production-nodes
+                         match-token (keys (mem/get-insertions-all memory rule-node))
+                         insertion-group (mem/get-insertions memory rule-node match-token)
+                         fact insertion-group]
+                     (platform/fact-id-wrap fact))
+        ;;; Gather facts from alpha memory
+        alpha-facts (->> (vals alpha-memory)
+                         (mapcat vals)
+                         (mapcat identity)
+                         (map :fact)
+                         (map platform/fact-id-wrap))
+        ;;; Gather facts from beta memory
+        beta-facts (->> (vals beta-memory)
+                        (mapcat vals)
+                        (mapcat identity)
+                        (mapcat :matches)
+                        (map first)
+                        (map platform/fact-id-wrap))
+        accum-facts (->> (vals accum-memory)
+                         (mapcat vals)
+                         (mapcat vals)
+                         (mapcat first)
+                         (map platform/fact-id-wrap))
+        ;;; Combine all gathered facts and remove duplicates, using their identity wrappers
+        unique-facts (set (concat pending-facts rule-facts alpha-facts beta-facts accum-facts))
+        ;;; Root facts are those that are not derived from rules
+        root-facts (set/difference unique-facts (set rule-facts))]
+    ;;; Return the unwrapped root facts
+    (for [^FactIdentityWrapper wrapper root-facts]
+      (.wrapped wrapper))))
+
 (def ^{:doc "Return a new session on which information will be gathered for optional inspection keys.
        This can significantly increase memory consumption since retracted facts
        cannot be garbage collected as normally."}
@@ -165,7 +223,7 @@
        This new session will not retain references to any such information previously gathered."}
   without-full-logging i/without-activation-listening)
 
-(s/defn inspect
+(s/defn inspect :- RulesInspectionSchema
   " Returns a representation of the given rule session useful to understand the
   state of the underlying rules.
 
@@ -205,45 +263,46 @@
   ...
 
   The above segment will return matches for the rule in question."
-  [session] :- InspectionSchema
+  [session]
   (let [{:keys [memory rulebase]} (eng/components session)
-        {:keys [productions production-nodes query-nodes id-to-node]} rulebase
-
+        {:keys [production-nodes query-nodes id-to-node]} rulebase
         ;; Map of queries to their nodes in the network.
-        query-to-nodes (into {} (for [[query-name query-node] query-nodes]
-                                  [(:query query-node) query-node]))
-
+        query-to-nodes (->> (for [[query-name query-node] query-nodes]
+                              [(:query query-node) query-node])
+                            (into {}))
+        query-matches (->> (for [[query query-node] query-to-nodes]
+                             [query (to-explanations session
+                                                     (mem/get-tokens-all memory query-node))])
+                           (into {}))
         ;; Map of rules to their nodes in the network.
-        rule-to-nodes (into {} (for [rule-node production-nodes]
-                                 [(:production rule-node) rule-node]))
-
-        base-info {:rule-matches (into {}
-                                       (for [[rule rule-node] rule-to-nodes]
-                                         [rule (to-explanations session
-                                                                (keys (mem/get-insertions-all memory rule-node)))]))
-
-                   :query-matches (into {}
-                                        (for [[query query-node] query-to-nodes]
-                                          [query (to-explanations session
-                                                                  (mem/get-tokens-all memory query-node))]))
-
-                   :condition-matches (get-condition-matches (vals id-to-node) memory)
-
-                   :insertions (into {}
-                                     (for [[rule rule-node] rule-to-nodes]
-                                       [rule
-                                        (for [token (keys (mem/get-insertions-all memory rule-node))
-                                              insertion-group (get (mem/get-insertions-all memory rule-node) token)
-                                              insertion insertion-group]
-                                          {:explanation (first (to-explanations session [token])) :fact insertion})]))
-
-                   :fact->explanations (gen-fact->explanations session)}]
-
+        rule-to-nodes (->> (for [rule-node production-nodes]
+                             [(:production rule-node) rule-node])
+                           (into {}))
+        rule-matches (->> (for [[rule rule-node] rule-to-nodes]
+                            [rule (to-explanations session
+                                                   (keys (mem/get-insertions-all memory rule-node)))])
+                          (into {}))
+        condition-matches (get-condition-matches (vals id-to-node) memory)
+        root-facts (get-root-facts session)
+        insertions (->> (for [[rule rule-node] rule-to-nodes]
+                          [rule
+                           (for [token (keys (mem/get-insertions-all memory rule-node))
+                                 insertion-group (get (mem/get-insertions-all memory rule-node) token)
+                                 insertion insertion-group]
+                             {:explanation (first (to-explanations session [token])) :fact insertion})])
+                        (into {}))
+        fact-explanations (into {} (gen-fact->explanations session))
+        base-info {:rule-matches rule-matches
+                   :query-matches query-matches
+                   :condition-matches condition-matches
+                   :root-facts root-facts
+                   :insertions insertions
+                   :fact->explanations fact-explanations}]
     (if-let [unfiltered-rule-matches (gen-all-rule-matches session)]
       (assoc base-info :unfiltered-rule-matches unfiltered-rule-matches)
       base-info)))
 
-(defn- explain-activation
+(defn explain-activation
   "Prints a human-readable explanation of the facts and conditions that created the Rete token."
   ([explanation] (explain-activation explanation ""))
   ([explanation prefix]
@@ -352,3 +411,39 @@
         (throw (ex-info "Unable to determine node from function"
                         {:name node-fn
                          :simple-name simple-fn-name}))))))
+
+(s/defn inspect-facts :- FactsInspectionSchema
+  "Returns a map with all rules and their associated facts in the session.
+  - :rules - a map of rule ids to their production nodes
+  - :facts - a sequence of maps with the following keys:
+    - :fact - the fact inserted
+    - :rule-id (optional) - the id of the rule that inserted the fact,
+      absent for root facts
+    - :bindings (optional) - the bindings used to insert the fact,
+      absent for root facts
+    - :fact-types - a sequence of fact types associated with the fact,
+      including ancestors"
+  [session]
+  (let [{:keys [memory rulebase get-alphas-fn]} (eng/components session)
+        {:keys [fact-type-fn
+                ancestors-fn]} (meta get-alphas-fn)
+        {:keys [production-nodes]} rulebase
+        root-facts (for [fact (get-root-facts session)
+                         :let [fact-type (fact-type-fn fact)
+                               ancestors (ancestors-fn fact-type)]]
+                     {:fact fact
+                      :fact-types (cons fact-type ancestors)})
+        rule-nodes (for [{:keys [id production]} production-nodes]
+                     [id production])
+        rule-facts (for [{:keys [id] :as rule-node} production-nodes
+                         {:keys [bindings] :as token} (keys (mem/get-insertions-all memory rule-node))
+                         insertion-group (mem/get-insertions memory rule-node token)
+                         fact insertion-group
+                         :let [fact-type (fact-type-fn fact)
+                               ancestors (ancestors-fn fact-type)]]
+                     {:fact fact
+                      :rule-id id
+                      :bindings bindings
+                      :fact-types (cons fact-type ancestors)})]
+    {:rules (into {} rule-nodes)
+     :facts (concat root-facts rule-facts)}))

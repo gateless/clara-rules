@@ -1889,9 +1889,8 @@
 
 (defn create-get-alphas-fn
   "Returns a function that given a sequence of facts,
-  returns a map associating alpha nodes with the facts they accept."
+  returns a list of tuples with each containing alpha nodes and the facts they accept."
   [fact-type-fn ancestors-fn alpha-roots]
-
   (let [;; If a customized fact-type-fn is provided,
         ;; we must use a specialized grouping function
         ;; that handles internal control types that may not
@@ -1941,13 +1940,18 @@
                                                 (.add fact-list fact)
                                                 fact-list))))]
 
-    (fn [facts]
+    ^{:fact-type-fn wrapped-fact-type-fn
+      :ancestors-fn wrapped-ancestors-fn}
+    (fn do-get-alphas
+      [facts]
       (let [roots->facts (java.util.LinkedHashMap.)]
         (doseq [fact facts
+                ;;; For each fact, find the matching alpha roots based on its type and ancestors.
                 roots-group (fact-type->roots (wrapped-fact-type-fn fact))]
+          ;;; Update the map of roots to facts
           (update-roots->facts! roots->facts roots-group fact))
 
-        (let [return-list (hf/mut-list)
+        (let [matched-alphas (hf/mut-list)
               entries (.entrySet roots->facts)
               entries-it (.iterator entries)]
           ;; We iterate over the LinkedHashMap manually to avoid potential issues described at http://dev.clojure.org/jira/browse/CLJ-1738
@@ -1955,14 +1959,15 @@
           ;; for performance but wrap them in unmodifiableList to make it clear that the caller is not expected to mutate these lists.
           ;; Since after this function returns the only reference to the fact lists will be through the unmodifiedList we can depend elsewhere
           ;; on these lists not changing.  Since the only expected workflow with these lists is to loop through them, not add or remove elements,
-          ;; we don't gain much from using a transient (which can be efficiently converted to a persistent data structure) rather than a mutable type.
+          ;; we don't gain much from using a transient (which can be efficiently converted to a persistent data structure)
+          ;; rather than a mutable type.
           (loop []
             (when (.hasNext entries-it)
               (let [^java.util.Map$Entry e (.next entries-it)]
-                (.add return-list [(-> e ^AlphaRootsWrapper (.getKey) (.wrapped))
-                                   (hf/persistent! (.getValue e))])
+                (.add matched-alphas [(-> e ^AlphaRootsWrapper (.getKey) (.wrapped))
+                                      (hf/persistent! (.getValue e))])
                 (recur))))
-          (hf/persistent! return-list))))))
+          (hf/persistent! matched-alphas))))))
 
 (defn create-ancestors-fn
   [{:keys [ancestors-fn

@@ -114,6 +114,9 @@
   ;; Converts the transient memory to persistent form.
   (to-persistent! [memory]))
 
+(def ROOT_NODE_ID 0)
+(def ROOT_NODE {:id ROOT_NODE_ID})
+
 (defn- coll-empty?
   "Returns true if the collection is empty.  Does not call seq due to avoid
   overhead that may cause for non-persistent collection types, e.g.
@@ -447,7 +450,6 @@
 (declare ->PersistentLocalMemory)
 
 ;;; Transient local memory implementation. Typically only persistent memory will be visible externally.
-
 (deftype TransientLocalMemory [rulebase
                                activation-group-sort-fn
                                activation-group-fn

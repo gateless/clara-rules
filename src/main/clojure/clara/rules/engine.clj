@@ -34,6 +34,11 @@
 ;; An activation for the given production and token.
 (defrecord Activation [node token])
 
+(defn ->RootElement
+  "Creates a root element with a root fact and empty bindings."
+  [fact]
+  (->Element fact {}))
+
 ;; Token with no bindings, used as the root of beta nodes.
 (def empty-token (->Token [] {}))
 
@@ -231,12 +236,12 @@
   This is similar to the function of the pending-updates in the fire-rules* loop."
   [get-alphas-fn memory transport listener]
   (loop []
-    (let [retractions (deref *pending-external-retractions*)
-          ;; We have already obtained a direct reference to the facts to be
-          ;; retracted in this iteration of the loop outside the cache.  Now reset
-          ;; the cache.  The retractions we execute may cause new retractions to be queued
-          ;; up, in which case the loop will execute again.
-          _ (reset! *pending-external-retractions* [])]
+    (let [retractions (deref *pending-external-retractions*)]
+      ;; We have already obtained a direct reference to the facts to be
+      ;; retracted in this iteration of the loop outside the cache.  Now reset
+      ;; the cache.  The retractions we execute may cause new retractions to be queued
+      ;; up, in which case the loop will execute again.
+      (reset! *pending-external-retractions* [])
       (doseq [[alpha-roots fact-group] (get-alphas-fn retractions)
               root alpha-roots]
         (alpha-retract root fact-group memory transport listener))
@@ -251,7 +256,7 @@
     (throw (ex-info "session pending updates missing:" {:session current-session
                                                         :label label})))
   (letfn [(flush-all [current-session flushed-items?]
-            (let [{:keys [rulebase transient-memory transport insertions get-alphas-fn listener]} current-session
+            (let [{:keys [transient-memory transport get-alphas-fn listener]} current-session
                   pending-updates (-> current-session :pending-updates uc/get-updates-and-reset!)]
 
               (if (empty? pending-updates)
@@ -294,7 +299,7 @@
   This should only be used for facts explicitly retracted in a RHS.
   It should not be used for retractions that occur as part of automatic truth maintenance."
   [facts]
-  (let [{:keys [rulebase transient-memory transport insertions get-alphas-fn listener]} *current-session*
+  (let [{:keys [transient-memory transport insertions get-alphas-fn listener]} *current-session*
         {:keys [node token]} *rule-context*]
     ;; Update the count so the rule engine will know when we have normalized.
     (swap! insertions + (count facts))
@@ -311,7 +316,7 @@
   "Perform the actual fact insertion, optionally making them unconditional.  This should only
    be called once per rule activation for logical insertions."
   [facts unconditional]
-  (let [{:keys [rulebase transient-memory transport insertions get-alphas-fn listener]} *current-session*
+  (let [{:keys [transient-memory insertions listener]} *current-session*
         {:keys [node token]} *rule-context*]
 
     ;; Update the insertion count.
@@ -1969,9 +1974,13 @@
 
             (case op-type
 
-              :insertion
+              :insert
               (do
                 (l/insert-facts! listener nil nil facts)
+
+                (when (seq facts)
+                  (mem/add-elements! memory mem/ROOT_NODE {}
+                                     (map ->RootElement facts)))
 
                 (binding [*pending-external-retractions* (atom [])]
                   ;; Bind the external retractions cache so that any logical retractions as a result
@@ -1983,9 +1992,13 @@
                     (alpha-activate root fact-group memory transport listener))
                   (external-retract-loop get-alphas-fn memory transport listener)))
 
-              :retraction
+              :retract
               (do
                 (l/retract-facts! listener nil nil facts)
+
+                (when (seq facts)
+                  (mem/remove-elements! memory mem/ROOT_NODE {}
+                                        (map ->RootElement facts)))
 
                 (binding [*pending-external-retractions* (atom facts)]
                   (external-retract-loop get-alphas-fn memory transport listener)))))
@@ -1995,27 +2008,37 @@
         (let [insertions (sequence
                           (comp (filter (fn [pending-op]
                                           (= (:type pending-op)
-                                             :insertion)))
+                                             :insert)))
                                 (mapcat :facts))
                           pending-operations)
 
               retractions (sequence
                            (comp (filter (fn [pending-op]
                                            (= (:type pending-op)
-                                              :retraction)))
+                                              :retract)))
                                  (mapcat :facts))
                            pending-operations)]
           ;; Insertions should come before retractions so that if we insert and then retract the same
           ;; fact that is not already in the session the end result will be that the session won't have that fact.
           ;; If retractions came first then we'd first retract a fact that isn't in the session, which doesn't do anything,
           ;; and then later we would insert the fact.
+
+          (when (seq insertions)
+            (mem/add-elements! memory mem/ROOT_NODE {}
+                               (map ->RootElement insertions)))
+
           (doseq [[alpha-roots fact-group] (get-alphas-fn insertions)
                   root alpha-roots]
             (alpha-activate root fact-group memory transport listener))
 
+          (when (seq retractions)
+            (mem/remove-elements! memory mem/ROOT_NODE {}
+                                  (map ->RootElement retractions)))
+
           (doseq [[alpha-roots fact-group] (get-alphas-fn retractions)
                   root alpha-roots]
             (alpha-retract root fact-group memory transport listener))
+
           (fire-rules-handler session opts))))))
 
 (defn- query*
@@ -2046,15 +2069,16 @@
   ISession
   (insert [session facts]
 
-    (let [new-pending-operations (conj pending-operations (uc/->PendingUpdate :insertion
-                                                                              ;; Preserve the behavior prior to https://github.com/cerner/clara-rules/issues/268
-                                                                              ;; , particularly for the Java API, where the caller could freely mutate a
-                                                                              ;; collection of facts after passing it to Clara for the constituent
-                                                                              ;; facts to be inserted or retracted.  If the caller passes a persistent
-                                                                              ;; Clojure collection don't do any additional work.
-                                                                              (if (coll? facts)
-                                                                                facts
-                                                                                (into [] facts))))]
+    (let [new-pending-operations (conj pending-operations
+                                       (uc/->PendingUpdate :insert
+                                                           ;; Preserve the behavior prior to https://github.com/cerner/clara-rules/issues/268
+                                                           ;; , particularly for the Java API, where the caller could freely mutate a
+                                                           ;; collection of facts after passing it to Clara for the constituent
+                                                           ;; facts to be inserted or retracted.  If the caller passes a persistent
+                                                           ;; Clojure collection don't do any additional work.
+                                                           (if (coll? facts)
+                                                             facts
+                                                             (into [] facts))))]
 
       (->LocalSession rulebase
                       memory
@@ -2065,11 +2089,12 @@
 
   (retract [session facts]
 
-    (let [new-pending-operations (conj pending-operations (uc/->PendingUpdate :retraction
-                                                                              ;; As in insert above defend against facts being a mutable collection.
-                                                                              (if (coll? facts)
-                                                                                facts
-                                                                                (into [] facts))))]
+    (let [new-pending-operations (conj pending-operations
+                                       (uc/->PendingUpdate :retract
+                                                           ;; As in insert above defend against facts being a mutable collection.
+                                                           (if (coll? facts)
+                                                             facts
+                                                             (into [] facts))))]
 
       (->LocalSession rulebase
                       memory
@@ -2085,11 +2110,10 @@
   (fire-rules [session opts]
     (let [transient-memory (mem/to-transient memory)
           transient-listener (l/to-transient listener)]
-      (fire-rules*
-       rulebase transient-memory transport
-       transient-listener get-alphas-fn
-       pending-operations opts
-       fire-rules!)
+      (fire-rules* rulebase transient-memory transport
+                   transient-listener get-alphas-fn
+                   pending-operations opts
+                   fire-rules!)
       (->LocalSession rulebase
                       (mem/to-persistent! transient-memory)
                       transport
@@ -2103,11 +2127,10 @@
     (async
      (let [transient-memory (mem/to-transient memory)
            transient-listener (l/to-transient listener)]
-       (<! (fire-rules*
-            rulebase transient-memory transport
-            transient-listener get-alphas-fn
-            pending-operations opts
-            fire-rules-async!))
+       (<! (fire-rules* rulebase transient-memory transport
+                        transient-listener get-alphas-fn
+                        pending-operations opts
+                        fire-rules-async!))
        (->LocalSession rulebase
                        (mem/to-persistent! transient-memory)
                        transport
