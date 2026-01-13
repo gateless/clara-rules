@@ -176,7 +176,7 @@
   ;;; If there are any root elements at all then attempt to find them in the memory.
   ;;; Old sessions may not have any root elements stored in memory when serialized.
   (let [{:keys [rulebase memory pending-operations]} (eng/components session)
-        {:keys [alpha-memory beta-memory accum-memory]} memory
+        {:keys [alpha-memory accum-memory]} memory
         {:keys [production-nodes]} rulebase
         pending-facts (->> (group-by :type pending-operations)
                            (:insert)
@@ -194,20 +194,13 @@
                          (mapcat identity)
                          (map :fact)
                          (map platform/fact-id-wrap))
-        ;;; Gather facts from beta memory
-        beta-facts (->> (vals beta-memory)
-                        (mapcat vals)
-                        (mapcat identity)
-                        (mapcat :matches)
-                        (map first)
-                        (map platform/fact-id-wrap))
         accum-facts (->> (vals accum-memory)
                          (mapcat vals)
                          (mapcat vals)
                          (mapcat first)
                          (map platform/fact-id-wrap))
         ;;; Combine all gathered facts and remove duplicates, using their identity wrappers
-        unique-facts (set (concat pending-facts rule-facts alpha-facts beta-facts accum-facts))
+        unique-facts (set (concat pending-facts rule-facts alpha-facts accum-facts))
         ;;; Root facts are those that are not derived from rules
         root-facts (set/difference unique-facts (set rule-facts))]
     ;;; Return the unwrapped root facts
@@ -267,7 +260,7 @@
   (let [{:keys [memory rulebase]} (eng/components session)
         {:keys [production-nodes query-nodes id-to-node]} rulebase
         ;; Map of queries to their nodes in the network.
-        query-to-nodes (->> (for [[query-name query-node] query-nodes]
+        query-to-nodes (->> (for [[_query-name query-node] query-nodes]
                               [(:query query-node) query-node])
                             (into {}))
         query-matches (->> (for [[query query-node] query-to-nodes]

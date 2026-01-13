@@ -1,5 +1,8 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.2
+* remove beta memory from inspect facts call
+
 # 1.6.1
 * track root facts in working memory for better inspection and serialization support
 * add new clara.tools.inspect/inspect-facts function to inspect facts in a session

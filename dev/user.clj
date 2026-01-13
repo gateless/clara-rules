@@ -30,7 +30,7 @@
             :value ?value}))
 
 (defrule return-a-thang
-  [?thang <- :thang/that [{:keys [value]}] (= value ?value)]
+  [?thang <- :thang/that [{:keys [value]}] (= value ?value) (pos? value)]
   [?thing <- :thing/that [{:keys [value]}] (= value ?value)]
   [?zulu <- (acc/all) :from [:zulu/that]]
   [:test (and (some? ?thing)
@@ -57,6 +57,10 @@
         :value 2}
        {:type :thang/that
         :value 3}
+       {:type :thang/that
+        :value 100}
+       {:type :thang/that
+        :value -100}
        {:type :zulu/that
         :value 4}
        {:type :zulu/that
@@ -83,11 +87,7 @@
 
   (-> components :memory keys)
 
-  (->> components :memory :alpha-memory
-       vals
-       (mapcat vals)
-       (mapcat identity)
-       (map :fact))
+  (->> components :memory)
   (->> components :memory :beta-memory
        vals
        (mapcat vals)
@@ -107,7 +107,29 @@
   (query session query-a-thing)
   (query session query-a-thang)
 
-  (inspect/inspect-facts session))
+  (def session2
+    (-> (eng/components session)
+        (update-in [:memory :alpha-memory] dissoc 0)
+        (eng/assemble)))
+
+  (def components
+    (eng/components session2))
+
+  (-> (inspect/inspect session2)
+      :root-facts
+      count)
+
+  (-> (inspect/inspect session)
+      :root-facts
+      count)
+
+  (-> (inspect/inspect-facts session2)
+      (:facts)
+      (count))
+
+  (-> (inspect/inspect-facts session)
+      (:facts)
+      (count)))
 
 (def session-cache
   (cache/lru-cache-factory {}))
