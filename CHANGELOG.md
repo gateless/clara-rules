@@ -1,5 +1,12 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.1
+* track root facts in working memory for better inspection and serialization support
+* add new clara.tools.inspect/inspect-facts function to inspect facts in a session
+* rename InspectionSchema to RulesInspectionSchema, added new FactsInspectionSchema
+* rename PendingUpdate operation types for consistency: :insertion -> :insert, :retraction -> :retract
+* made some inspection helper functions public for better composability, such as when users build custom inspection tools
+
 # 1.6.0
 * ensure read-only session has rules network with noop expressions (no compilation)
 * remove unused alphas-fn from memory, it is not used nor needed, cleanup
