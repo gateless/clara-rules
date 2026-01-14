@@ -75,6 +75,14 @@
             (s/optional-key :bindings) {s/Keyword s/Any}
             :fact-types [s/Any]}]})
 
+(defn- gen-binding?
+  [[k _v]]
+  (.startsWith (name k) "?__gen__"))
+
+(defn- dissoc-gen-bindings
+  [bindings]
+  (into {} (remove gen-binding? bindings)))
+
 (defn get-condition-matches
   "Returns facts matching each condition"
   [nodes memory]
@@ -141,9 +149,7 @@
             :condition condition}))
 
         ;; Remove generated bindings from user-facing explanation.
-       (into {} (remove (fn [[k v]]
-                          (.startsWith (name k) "?__gen__"))
-                        bindings))))))
+       (dissoc-gen-bindings bindings)))))
 
 (defn gen-all-rule-matches
   [session]
@@ -438,7 +444,8 @@
                          insertion-group (mem/get-insertions memory rule-node token)
                          fact insertion-group
                          :let [fact-type (fact-type-fn fact)
-                               ancestors (ancestors-fn fact-type)]
+                               ancestors (ancestors-fn fact-type)
+                               bindings (dissoc-gen-bindings bindings)]
                          :when (and (some? fact)
                                     (not (instance? ISystemFact fact)))]
                      {:fact fact

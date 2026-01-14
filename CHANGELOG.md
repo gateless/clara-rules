@@ -1,5 +1,8 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.5
+* remove generated bindings from clara.tools.inspect/inspect-facts bindings results
+
 # 1.6.4
 * make more enhancements to clara.tools.inspect/get-root-facts and clara.tools.inspect/inspect-facts
 
