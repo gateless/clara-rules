@@ -1,5 +1,8 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.3
+* remove accum memory from get-root-facts, use matches instead
+
 # 1.6.2
 * remove beta memory from inspect facts call
 

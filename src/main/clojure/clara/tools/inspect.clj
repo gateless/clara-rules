@@ -175,36 +175,36 @@
   [session]
   ;;; If there are any root elements at all then attempt to find them in the memory.
   ;;; Old sessions may not have any root elements stored in memory when serialized.
-  (let [{:keys [rulebase memory pending-operations]} (eng/components session)
-        {:keys [alpha-memory accum-memory]} memory
-        {:keys [production-nodes]} rulebase
-        pending-facts (->> (group-by :type pending-operations)
-                           (:insert)
-                           (mapcat :facts)
-                           (map platform/fact-id-wrap))
-        ;;; Gather facts that were inserted by rules
-        rule-facts (for [rule-node production-nodes
-                         match-token (keys (mem/get-insertions-all memory rule-node))
-                         insertion-group (mem/get-insertions memory rule-node match-token)
-                         fact insertion-group]
-                     (platform/fact-id-wrap fact))
+  (let [{:keys [rulebase memory]} (eng/components session)
+        {:keys [alpha-memory]} memory
+        {:keys [production-nodes id-to-node]} rulebase
         ;;; Gather facts from alpha memory
-        alpha-facts (->> (vals alpha-memory)
-                         (mapcat vals)
-                         (mapcat identity)
-                         (map :fact)
-                         (map platform/fact-id-wrap))
-        accum-facts (->> (vals accum-memory)
-                         (mapcat vals)
-                         (mapcat vals)
-                         (mapcat first)
-                         (map platform/fact-id-wrap))
+        facts-from-alphas (->> (vals alpha-memory)
+                               (mapcat vals)
+                               (mapcat identity)
+                               (map :fact)
+                               (map platform/fact-id-wrap))
+        ;;; Gather facts that were matched or inserted by rules
+        facts-from-inserts (for [rule-node production-nodes
+                                 token (keys (mem/get-insertions-all memory rule-node))
+                                 insertion-group (mem/get-insertions memory rule-node token)
+                                 fact insertion-group]
+                             (platform/fact-id-wrap fact))
+        facts-from-matches (for [rule-node production-nodes
+                                 {:keys [matches] :as token} (keys (mem/get-insertions-all memory rule-node))
+                                 [fact node-id] matches
+                                 :let [node (id-to-node node-id)]
+                                 fact (if (:accum-condition node)
+                                        (eng/token->matching-elements node memory token)
+                                        [fact])]
+                             (platform/fact-id-wrap fact))
         ;;; Combine all gathered facts and remove duplicates, using their identity wrappers
-        unique-facts (set (concat pending-facts rule-facts alpha-facts accum-facts))
+        all-facts (set (concat facts-from-alphas facts-from-inserts facts-from-matches))
+        new-facts (set facts-from-inserts)
         ;;; Root facts are those that are not derived from rules
-        root-facts (set/difference unique-facts (set rule-facts))]
+        old-facts (set/difference all-facts new-facts)]
     ;;; Return the unwrapped root facts
-    (for [^FactIdentityWrapper wrapper root-facts]
+    (for [^FactIdentityWrapper wrapper old-facts]
       (.wrapped wrapper))))
 
 (def ^{:doc "Return a new session on which information will be gathered for optional inspection keys.
