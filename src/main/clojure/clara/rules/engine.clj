@@ -1730,15 +1730,18 @@
   (token->matching-elements [this memory token]
     (let [join-bindings (-> token :bindings (select-keys (get-join-keys this)))
           fact-bindings (-> token :bindings (select-keys new-bindings))
-          unfiltered-facts (mem/get-accum-reduced memory this join-bindings (merge join-bindings fact-bindings))]
+          accum-reduced (mem/get-accum-reduced memory this join-bindings (merge join-bindings fact-bindings))]
       ;; The functionality to throw conditions with meaningful information assumes that all bindings in the token
       ;; are meaningful to the join, which is not the case here since the token passed is from a descendant of this node, not
       ;; this node.  The generated error message also wouldn't make much sense in the context of session inspection.
       ;; We could create specialized error handling here, but in reality most cases that cause errors here would also cause
       ;; errors at rule firing time so the benefit would be limited.  Nevertheless there would be some benefit and it is
       ;; possible that we will do it in the future..
-      (filter (fn [fact] (join-filter-fn token fact fact-bindings {}))
-              unfiltered-facts))))
+      (if (not= accum-reduced ::mem/no-accum-reduced)
+        (for [fact accum-reduced
+              :when (join-filter-fn token fact fact-bindings {})]
+          fact)
+        []))))
 
 ;; This lives here as it is both close to the node that it represents, and is accessible to both clj and cljs
 (def node-type->abbreviated-type

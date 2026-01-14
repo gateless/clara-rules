@@ -14,13 +14,13 @@
             [schema.core :as s]
             [clojure.string :as str])
   (:import [clara.rules.engine
+            ISystemFact
             ProductionNode
             RootJoinNode
             HashJoinNode
             ExpressionJoinNode
             NegationNode
-            NegationWithJoinFilterNode]
-           [clara.rules.platform FactIdentityWrapper]))
+            NegationWithJoinFilterNode]))
 
 (s/defschema ConditionMatch
   "A structure associating a condition with the facts that matched them.  The fields are:
@@ -183,29 +183,34 @@
                                (mapcat vals)
                                (mapcat identity)
                                (map :fact)
-                               (map platform/fact-id-wrap))
-        ;;; Gather facts that were matched or inserted by rules
-        facts-from-inserts (for [rule-node production-nodes
-                                 token (keys (mem/get-insertions-all memory rule-node))
-                                 insertion-group (mem/get-insertions memory rule-node token)
-                                 fact insertion-group]
-                             (platform/fact-id-wrap fact))
-        facts-from-matches (for [rule-node production-nodes
-                                 {:keys [matches] :as token} (keys (mem/get-insertions-all memory rule-node))
-                                 [fact node-id] matches
-                                 :let [node (id-to-node node-id)]
-                                 fact (if (:accum-condition node)
-                                        (eng/token->matching-elements node memory token)
-                                        [fact])]
-                             (platform/fact-id-wrap fact))
+                               (map platform/fact-id-wrap)
+                               (set))
+        ;;; Gather facts that were inserted by rules
+        facts-from-inserts (->> (for [rule-node production-nodes
+                                      token (keys (mem/get-insertions-all memory rule-node))
+                                      insertion-group (mem/get-insertions memory rule-node token)
+                                      fact insertion-group]
+                                  (platform/fact-id-wrap fact))
+                                (set))
+        ;;; Gather facts that were matched by rules
+        facts-from-matches (->> (for [rule-node production-nodes
+                                      {:keys [matches] :as token} (keys (mem/get-insertions-all memory rule-node))
+                                      [fact node-id] matches
+                                      :let [node (id-to-node node-id)
+                                            accum (when (:accum-condition node)
+                                                    (eng/token->matching-elements node memory token))]
+                                      fact (if (and (some? accum) (coll? accum))
+                                             accum
+                                             [fact])]
+                                  (platform/fact-id-wrap fact))
+                                (set))
         ;;; Combine all gathered facts and remove duplicates, using their identity wrappers
-        all-facts (set (concat facts-from-alphas facts-from-inserts facts-from-matches))
-        new-facts (set facts-from-inserts)
+        all-facts (set/union facts-from-alphas facts-from-inserts facts-from-matches)
         ;;; Root facts are those that are not derived from rules
-        old-facts (set/difference all-facts new-facts)]
+        root-facts (set/difference all-facts facts-from-inserts)]
     ;;; Return the unwrapped root facts
-    (for [^FactIdentityWrapper wrapper old-facts]
-      (.wrapped wrapper))))
+    (for [wrapper root-facts]
+      (platform/fact-id-unwrap wrapper))))
 
 (def ^{:doc "Return a new session on which information will be gathered for optional inspection keys.
        This can significantly increase memory consumption since retracted facts
@@ -433,7 +438,9 @@
                          insertion-group (mem/get-insertions memory rule-node token)
                          fact insertion-group
                          :let [fact-type (fact-type-fn fact)
-                               ancestors (ancestors-fn fact-type)]]
+                               ancestors (ancestors-fn fact-type)]
+                         :when (and (some? fact)
+                                    (not (instance? ISystemFact fact)))]
                      {:fact fact
                       :rule-id id
                       :bindings bindings

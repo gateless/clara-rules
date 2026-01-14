@@ -1,5 +1,8 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.4
+* make more enhancements to clara.tools.inspect/get-root-facts and clara.tools.inspect/inspect-facts
+
 # 1.6.3
 * remove accum memory from get-root-facts, use matches instead
 
