@@ -209,6 +209,7 @@
 
           restored-rulebase (d/deserialize-rulebase (mk-rulebase-serializer))
           ro-restored-rulebase (d/deserialize-rulebase (mk-rulebase-serializer) {:read-only? true})
+          qo-restored-rulebase (d/deserialize-rulebase (mk-rulebase-serializer) {:query-only? true})
           restored (d/deserialize-session-state (mk-session-serializer)
                                                 mem-serializer
                                                 {:base-rulebase restored-rulebase})
@@ -216,17 +217,26 @@
                                                    mem-serializer
                                                    {:base-rulebase ro-restored-rulebase
                                                     :read-only? true})
+          qo-restored (d/deserialize-session-state (mk-session-serializer)
+                                                   mem-serializer
+                                                   {:base-rulebase qo-restored-rulebase
+                                                    :query-only? true})
 
           r-unpaired-res (query restored dr/unpaired-wind-speed)
           ro-unpaired-res (query ro-restored dr/unpaired-wind-speed)
+          qo-unpaired-res (query qo-restored dr/unpaired-wind-speed)
           r-cold-res (query restored dr/cold-temp)
           ro-cold-res (query ro-restored dr/cold-temp)
+          qo-cold-res (query qo-restored dr/cold-temp)
           r-hot-res (query restored dr/hot-temp)
           ro-hot-res (query ro-restored dr/hot-temp)
+          qo-hot-res (query qo-restored dr/hot-temp)
           r-temp-his-res (query restored dr/temp-his)
           ro-temp-his-res (query ro-restored dr/temp-his)
+          qo-temp-his-res (query qo-restored dr/temp-his)
           r-temps-under-thresh-res (query restored dr/temps-under-thresh)
           ro-temps-under-thresh-res (query ro-restored dr/temps-under-thresh)
+          qo-temps-under-thresh-res (query qo-restored dr/temps-under-thresh)
 
           facts (sort-by hash @(:holder mem-serializer))]
       (testing "Ensure restored read-only session"
@@ -245,33 +255,54 @@
         (is (thrown? UnsupportedOperationException
                      (retract ro-restored))))
 
+      (testing "Ensure restored query-only session"
+        (is (instance? ReadOnlyLocalSession qo-restored))
+        (let [component-keys [:rulebase :memory :transport :listeners :get-alphas-fn]
+              components (eng/components qo-restored)]
+          (doseq [component-key component-keys]
+            (is (some? (get components component-key))
+                (str "Read-only restored session should have component: " component-key))))
+        (is (thrown? UnsupportedOperationException
+                     (fire-rules qo-restored)))
+        (is (thrown? UnsupportedOperationException
+                     (fire-rules-async qo-restored)))
+        (is (thrown? UnsupportedOperationException
+                     (insert qo-restored)))
+        (is (thrown? UnsupportedOperationException
+                     (retract qo-restored))))
+
       (testing "Ensure the queries return same before and after serialization"
         (is (= (frequencies [{:?ws (dr/->UnpairedWindSpeed ws10)}])
                (frequencies unpaired-res)
                (frequencies r-unpaired-res)
-               (frequencies ro-unpaired-res)))
+               (frequencies ro-unpaired-res)
+               (frequencies qo-unpaired-res)))
 
         (is (= (frequencies [{:?c (->Cold 20)}])
                (frequencies cold-res)
                (frequencies r-cold-res)
-               (frequencies ro-cold-res)))
+               (frequencies ro-cold-res)
+               (frequencies qo-cold-res)))
 
         (is (= (frequencies [{:?h (->Hot 50)}
                              {:?h (->Hot 40)}
                              {:?h (->Hot 30)}])
                (frequencies hot-res)
                (frequencies r-hot-res)
-               (frequencies ro-hot-res)))
+               (frequencies ro-hot-res)
+               (frequencies qo-hot-res)))
 
         (is (= (frequencies [{:?his (->TemperatureHistory [50 40 30 20])}])
                (frequencies temp-his-res)
                (frequencies r-temp-his-res)
-               (frequencies ro-temp-his-res)))
+               (frequencies ro-temp-his-res)
+               (frequencies qo-temp-his-res)))
 
         (is (= (frequencies [{:?tut (dr/->TempsUnderThreshold [temp40 temp30 temp20])}])
                (frequencies temps-under-thresh-res)
                (frequencies r-temps-under-thresh-res)
-               (frequencies ro-temps-under-thresh-res))))
+               (frequencies ro-temps-under-thresh-res)
+               (frequencies qo-temps-under-thresh-res))))
 
       (testing "metadata is preserved on rulebase nodes"
         (let [node-with-meta (->> s

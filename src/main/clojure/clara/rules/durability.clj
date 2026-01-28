@@ -21,6 +21,12 @@
 ;;;; Rulebase serialization helpers.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def ^:internal ^:dynamic *read-only*
+  "Indicates whether the rulebase or session is being deserialized in read-only mode.
+  This is useful for durability implementations to know whether to restore nodes
+  that would only be used for rule firing (which is disabled in read-only mode)."
+  false)
+
 (def ^:internal ^:dynamic *node-id->node-cache*
   "Useful for caching rulebase network nodes by id during serialization and deserialization to
    avoid creating multiple object instances for the same node."
@@ -488,7 +494,7 @@
    Note!  Currently this only supports the clara.rules.memory.PersistentLocalMemory implementation
           of memory."
   ([rulebase opts]
-   (let [{:keys [listeners transport read-only?]} opts
+   (let [{:keys [listeners transport read-only? query-only?]} opts
          memory (eng/local-memory rulebase
                                   (clara.rules.engine.LocalTransport.)
                                   (:activation-group-sort-fn rulebase)
@@ -498,12 +504,18 @@
                      :transport (or transport (clara.rules.engine.LocalTransport.))
                      :listeners (or listeners [])
                      :get-alphas-fn (:get-alphas-fn rulebase)}]
-     (if read-only?
+     (cond
+       query-only?
+       (eng/assemble-query-only components)
+
+       read-only?
        (eng/assemble-read-only components)
+
+       :else
        (eng/assemble components))))
 
   ([rulebase memory opts]
-   (let [{:keys [listeners transport read-only?]} opts
+   (let [{:keys [listeners transport read-only? query-only?]} opts
          memory (assoc memory
                        :rulebase rulebase
                        :activation-group-sort-fn (:activation-group-sort-fn rulebase)
@@ -513,8 +525,14 @@
                      :transport (or transport (clara.rules.engine.LocalTransport.))
                      :listeners (or listeners [])
                      :get-alphas-fn (:get-alphas-fn rulebase)}]
-     (if read-only?
+     (cond
+       query-only?
+       (eng/assemble-query-only components)
+
+       read-only?
        (eng/assemble-read-only components)
+
+       :else
        (eng/assemble components)))))
 
 (defn rulebase->rulebase-with-opts
@@ -526,6 +544,30 @@
          :activation-group-sort-fn (eng/options->activation-group-sort-fn opts)
          :activation-group-fn (eng/options->activation-group-fn opts)
          :get-alphas-fn (opts->get-alphas-fn without-opts-rulebase opts)))
+
+(defn reconstruct-node-expr-fn-lookup
+  "Rebuilds the expr-lookup map from the serialized map to NodeExprFnLookup:
+  {[Int Keyword] {Keyword Any}} -> {[Int Keyword] [ExprFn {Keyword Any}]}
+
+  Options:
+  - :read-only? (boolean) or :query-only? (boolean)
+    - true: the expressions are not compiled, and instead com/read-only-expr is used for all expressions.
+    - false: the expressions are compiled via com/compile-exprs.
+
+  This is left public to assist in ISessionSerializer durability implementations."
+  [expr-lookup {:keys [read-only? query-only?] :as opts}]
+  ;; Rebuilding the expr-lookup map from the serialized map:
+  ;; {[Int Keyword] {Keyword Any}} -> {[Int Keyword] [SExpr {Keyword Any}]}
+  (let [read-only (or read-only? query-only?)
+        node-expr-lookup (into {}
+                               (for [[node-key compilation-ctx] expr-lookup
+                                     :let [expr (if read-only
+                                                  com/read-only-expr
+                                                  (-> compilation-ctx (get (nth node-key 1))))]]
+                                 [node-key [expr compilation-ctx]]))]
+    (cond-> node-expr-lookup
+      (not read-only)
+      (com/compile-exprs opts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Serialization protocols.
@@ -546,9 +588,16 @@
      space and time in these scenarios.
 
    * :read-only? - When true indicates the rulebase or session should be deserialized in read-only mode,
-     meaning only queries are allowed, this session can be queried like any other session but rules can
-     no longer be fired, facts cannot be inserted nor retracted. This session will only contain query nodes
-     and query beta memory.
+     meaning only queries and inspection operations are allowed. Rules cannot be fired, and facts cannot
+     be inserted nor retracted. The session will contain query nodes, query beta memory, and sufficient
+     infrastructure for inspection operations.
+
+  * :query-only? - When true indicates the rulebase or session should be deserialized in query-only mode,
+     a more restrictive subset of read-only mode. Only queries are supported (inspection operations are
+     not available). Rules cannot be fired, and facts cannot be inserted nor retracted. This is a more
+     aggressive optimization than :read-only?, resulting in smaller memory footprint and serialization
+     size since only query nodes and query beta memory are preserved. Use this when you need queries
+     but not inspection.
 
    * :with-rulebase? - When true the rulebase is included in the serialized state of the session.  
      The *default* behavior is false when serializing a session via the serialize-session-state function.

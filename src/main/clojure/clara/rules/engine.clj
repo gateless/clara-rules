@@ -2213,6 +2213,71 @@
   [session]
   (assemble-read-only (components session)))
 
+(defn rulebase->query-only-rulebase
+  "Constructs a new query-only rulebase from an existing rulebase. The query-only network
+  contains only query nodes and strips out all production-related infrastructure:
+  - Alpha and beta root nodes (not needed for queries)
+  - Production nodes and rules (queries don't fire rules)
+  - Activation group functions (no rule firing)
+  - Node expression functions (queries use pre-compiled expressions)
+
+  This significantly reduces memory footprint for sessions that only need to execute queries.
+  Query nodes are preserved through the original rulebase structure's :query-nodes map."
+  [rulebase]
+  (assoc rulebase
+         :alpha-roots {}
+         :beta-roots []
+         :productions #{}
+         :production-nodes []
+         :id-to-node {}
+         :activation-group-sort-fn nil
+         :activation-group-fn nil
+         :get-alphas-fn nil
+         :node-expr-fn-lookup {}))
+
+(defn memory->query-only-beta-memory
+  "Constructs a query only beta memory from a memory, the query only beta memory only contains the beta memory for query nodes"
+  [{:keys [rulebase] :as memory}]
+  (let [{:keys [query-nodes]} rulebase
+        query-node-set (set (vals query-nodes))]
+    (into {}
+          (for [query-node query-node-set
+                :let [node-id (:id query-node)
+                      node-memory (mem/get-tokens-map memory query-node)]
+                :when (seq node-memory)]
+            [node-id node-memory]))))
+
+(defn assemble-query-only
+  "Assembles a query-only session from the given components. A query-only session is a more
+  restrictive subset of a read-only session - it supports queries only, not inspection operations.
+
+  This function:
+  1. Creates a minimal rulebase containing only query nodes
+  2. Extracts only the beta memory needed for those query nodes
+  3. Constructs a ReadOnlyLocalSession with the minimal rulebase and memory
+
+  Query-only sessions have significantly smaller memory footprint and serialization size compared
+  to both full sessions and read-only sessions, making them ideal for scenarios where only
+  query execution is needed."
+  [{:keys [rulebase memory transport listeners get-alphas-fn]}]
+  (let [query-only-rulebase (rulebase->query-only-rulebase rulebase)
+        query-only-beta-memory (memory->query-only-beta-memory memory)
+        query-only-memory (mem/map->PersistentLocalMemory {:rulebase query-only-rulebase
+                                                           :beta-memory query-only-beta-memory})]
+    (ReadOnlyLocalSession. query-only-rulebase
+                           query-only-memory
+                           transport
+                           (l/combine-listeners listeners)
+                           get-alphas-fn)))
+
+(defn as-query-only
+  "Converts an existing session into a query-only session. The resulting session supports
+  only query execution - inspection operations, rule firing, and fact insertion/retraction
+  are not available. This is a more aggressive optimization than as-read-only, resulting
+  in smaller memory footprint since only query nodes and their beta memory are preserved."
+  [session]
+  (assemble-query-only (components session)))
+
 (defn with-listener
   "Return a new session with the listener added to the provided session,
    in addition to all listeners previously on the session."
