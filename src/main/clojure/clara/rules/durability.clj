@@ -21,6 +21,12 @@
 ;;;; Rulebase serialization helpers.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def ^:internal ^:dynamic *read-only*
+  "Indicates whether the rulebase or session is being deserialized in read-only mode.
+  This is useful for durability implementations to know whether to restore nodes
+  that would only be used for rule firing (which is disabled in read-only mode)."
+  false)
+
 (def ^:internal ^:dynamic *node-id->node-cache*
   "Useful for caching rulebase network nodes by id during serialization and deserialization to
    avoid creating multiple object instances for the same node."
@@ -526,6 +532,29 @@
          :activation-group-sort-fn (eng/options->activation-group-sort-fn opts)
          :activation-group-fn (eng/options->activation-group-fn opts)
          :get-alphas-fn (opts->get-alphas-fn without-opts-rulebase opts)))
+
+(defn reconstruct-node-expr-fn-lookup
+  "Rebuilds the expr-lookup map from the serialized map to NodeExprFnLookup:
+  {[Int Keyword] {Keyword Any}} -> {[Int Keyword] [ExprFn {Keyword Any}]}
+
+  Options:
+  - :read-only? (boolean)
+    - true: the expressions are not compiled, and instead com/read-only-expr is used for all expressions.
+    - false: the expressions are compiled via com/compile-exprs.
+
+  This is left public to assist in ISessionSerializer durability implementations."
+  [expr-lookup {:keys [read-only?] :as opts}]
+  ;; Rebuilding the expr-lookup map from the serialized map:
+  ;; {[Int Keyword] {Keyword Any}} -> {[Int Keyword] [SExpr {Keyword Any}]}
+  (let [node-expr-lookup (into {}
+                               (for [[node-key compilation-ctx] expr-lookup
+                                     :let [expr (if read-only?
+                                                  com/read-only-expr
+                                                  (-> compilation-ctx (get (nth node-key 1))))]]
+                                 [node-key [expr compilation-ctx]]))]
+    (cond-> node-expr-lookup
+      (not read-only?)
+      (com/compile-exprs opts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Serialization protocols.

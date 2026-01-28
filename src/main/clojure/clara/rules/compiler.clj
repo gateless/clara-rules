@@ -172,7 +172,9 @@
     (boolean (or (#{'= '== 'clojure.core/= 'clojure.core/==} op)
                  (#{'clojure.core/= 'clojure.core/==} (qualify-when-sym op))))))
 
-(def ^:private read-only-expr (constantly true))
+(defn read-only-expr
+  [& _]
+  true)
 
 (def ^:dynamic *compile-ctx* nil)
 

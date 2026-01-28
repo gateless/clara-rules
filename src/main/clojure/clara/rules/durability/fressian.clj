@@ -610,22 +610,14 @@
             maybe-base-rulebase (when (and (not rulebase-only?) base-rulebase)
                                   base-rulebase)
 
-            reconstruct-expressions (fn [expr-lookup]
-                                      ;; Rebuilding the expr-lookup map from the serialized map:
-                                      ;; {[Int Keyword] {Keyword Any}} -> {[Int Keyword] [SExpr {Keyword Any}]}
-                                      (into {}
-                                            (for [[node-key compilation-ctx] expr-lookup]
-                                              [node-key [(-> compilation-ctx (get (nth node-key 1)))
-                                                         compilation-ctx]])))
-
             rulebase (if maybe-base-rulebase
                        maybe-base-rulebase
                        (let [without-opts-rulebase
-                             (binding [d/*node-id->node-cache* (atom {})
+                             (binding [d/*read-only* read-only?
+                                       d/*node-id->node-cache* (atom {})
                                        d/*clj-struct-holder* record-holder]
                                (binding [d/*node-fn-cache* (-> (fres/read-object rdr)
-                                                               (reconstruct-expressions)
-                                                               (com/compile-exprs opts))]
+                                                               (d/reconstruct-node-expr-fn-lookup opts))]
                                  (assoc (fres/read-object rdr)
                                         :node-expr-fn-lookup
                                         d/*node-fn-cache*)))]
