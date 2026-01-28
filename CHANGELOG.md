@@ -1,5 +1,10 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.6
+
+### Added
+- **Query-only sessions**: New `:query-only?` option for deserializing sessions that only need to execute queries. Query-only sessions are a more aggressive optimization than read-only sessions (`:read-only?`), with smaller memory footprint and serialization size. Read-only sessions support both queries and inspection operations, while query-only sessions support queries only. Use query-only when you need the smallest possible session for query execution.
+
 # 1.6.5
 * remove generated bindings from clara.tools.inspect/inspect-facts bindings results
 
