@@ -602,8 +602,10 @@
     (with-open [^FressianReader rdr (fres/create-reader in-stream :handlers read-handler-lookup)]
       (let [{:keys [base-rulebase
                     rulebase-only?
+                    query-only?
                     read-only?]} opts
 
+            read-only (or read-only? query-only?)
             record-holder (ArrayList.)
             ;; The rulebase should either be given from the base-session or found in
             ;; the restored session-state.
@@ -613,7 +615,7 @@
             rulebase (if maybe-base-rulebase
                        maybe-base-rulebase
                        (let [without-opts-rulebase
-                             (binding [d/*read-only* read-only?
+                             (binding [d/*read-only* read-only
                                        d/*node-id->node-cache* (atom {})
                                        d/*clj-struct-holder* record-holder]
                                (binding [d/*node-fn-cache* (-> (fres/read-object rdr)

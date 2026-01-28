@@ -494,7 +494,7 @@
    Note!  Currently this only supports the clara.rules.memory.PersistentLocalMemory implementation
           of memory."
   ([rulebase opts]
-   (let [{:keys [listeners transport read-only?]} opts
+   (let [{:keys [listeners transport read-only? query-only?]} opts
          memory (eng/local-memory rulebase
                                   (clara.rules.engine.LocalTransport.)
                                   (:activation-group-sort-fn rulebase)
@@ -504,12 +504,18 @@
                      :transport (or transport (clara.rules.engine.LocalTransport.))
                      :listeners (or listeners [])
                      :get-alphas-fn (:get-alphas-fn rulebase)}]
-     (if read-only?
+     (cond
+       query-only?
+       (eng/assemble-query-only components)
+
+       read-only?
        (eng/assemble-read-only components)
+
+       :else
        (eng/assemble components))))
 
   ([rulebase memory opts]
-   (let [{:keys [listeners transport read-only?]} opts
+   (let [{:keys [listeners transport read-only? query-only?]} opts
          memory (assoc memory
                        :rulebase rulebase
                        :activation-group-sort-fn (:activation-group-sort-fn rulebase)
@@ -519,8 +525,14 @@
                      :transport (or transport (clara.rules.engine.LocalTransport.))
                      :listeners (or listeners [])
                      :get-alphas-fn (:get-alphas-fn rulebase)}]
-     (if read-only?
+     (cond
+       query-only?
+       (eng/assemble-query-only components)
+
+       read-only?
        (eng/assemble-read-only components)
+
+       :else
        (eng/assemble components)))))
 
 (defn rulebase->rulebase-with-opts
@@ -538,22 +550,23 @@
   {[Int Keyword] {Keyword Any}} -> {[Int Keyword] [ExprFn {Keyword Any}]}
 
   Options:
-  - :read-only? (boolean)
+  - :read-only? (boolean) or :query-only? (boolean)
     - true: the expressions are not compiled, and instead com/read-only-expr is used for all expressions.
     - false: the expressions are compiled via com/compile-exprs.
 
   This is left public to assist in ISessionSerializer durability implementations."
-  [expr-lookup {:keys [read-only?] :as opts}]
+  [expr-lookup {:keys [read-only? query-only?] :as opts}]
   ;; Rebuilding the expr-lookup map from the serialized map:
   ;; {[Int Keyword] {Keyword Any}} -> {[Int Keyword] [SExpr {Keyword Any}]}
-  (let [node-expr-lookup (into {}
+  (let [read-only (or read-only? query-only?)
+        node-expr-lookup (into {}
                                (for [[node-key compilation-ctx] expr-lookup
-                                     :let [expr (if read-only?
+                                     :let [expr (if read-only
                                                   com/read-only-expr
                                                   (-> compilation-ctx (get (nth node-key 1))))]]
                                  [node-key [expr compilation-ctx]]))]
     (cond-> node-expr-lookup
-      (not read-only?)
+      (not read-only)
       (com/compile-exprs opts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -575,6 +588,11 @@
      space and time in these scenarios.
 
    * :read-only? - When true indicates the rulebase or session should be deserialized in read-only mode,
+     meaning only queries are allowed, this session can be queried like any other session but rules can
+     no longer be fired, facts cannot be inserted nor retracted. This session will only contain query nodes
+     and query beta memory.
+
+  * :query-only? - When true indicates the rulebase or session should be deserialized in query-only mode,
      meaning only queries are allowed, this session can be queried like any other session but rules can
      no longer be fired, facts cannot be inserted nor retracted. This session will only contain query nodes
      and query beta memory.

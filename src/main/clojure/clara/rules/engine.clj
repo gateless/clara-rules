@@ -2213,6 +2213,48 @@
   [session]
   (assemble-read-only (components session)))
 
+(defn rulebase->query-only-rulebase
+  "Construcs a query only network from a rulebase, the query only network only contains query nodes"
+  [rulebase]
+  (assoc rulebase
+         :alpha-roots {}
+         :beta-roots []
+         :productions #{}
+         :production-nodes []
+         :id-to-node {}
+         :activation-group-sort-fn nil
+         :activation-group-fn nil
+         :get-alphas-fn nil
+         :node-expr-fn-lookup {}))
+
+(defn memory->query-only-beta-memory
+  "Constructs a query only beta memory from a memory, the query only beta memory only contains the beta memory for query nodes"
+  [{:keys [rulebase] :as memory}]
+  (let [{:keys [query-nodes]} rulebase
+        query-node-set (set (vals query-nodes))]
+    (into {}
+          (for [query-node query-node-set
+                :let [node-id (:id query-node)
+                      node-memory (mem/get-tokens-map memory query-node)]
+                :when (seq node-memory)]
+            [node-id node-memory]))))
+
+(defn assemble-query-only
+  [{:keys [rulebase memory transport listeners get-alphas-fn]}]
+  (let [query-only-rulebase (rulebase->query-only-rulebase rulebase)
+        query-only-beta-memory (memory->query-only-beta-memory memory)
+        query-only-memory (mem/map->PersistentLocalMemory {:rulebase query-only-rulebase
+                                                           :beta-memory query-only-beta-memory})]
+    (ReadOnlyLocalSession. query-only-rulebase
+                           query-only-memory
+                           transport
+                           (l/combine-listeners listeners)
+                           get-alphas-fn)))
+
+(defn as-query-only
+  [session]
+  (assemble-query-only (components session)))
+
 (defn with-listener
   "Return a new session with the listener added to the provided session,
    in addition to all listeners previously on the session."
