@@ -588,14 +588,16 @@
      space and time in these scenarios.
 
    * :read-only? - When true indicates the rulebase or session should be deserialized in read-only mode,
-     meaning only queries are allowed, this session can be queried like any other session but rules can
-     no longer be fired, facts cannot be inserted nor retracted. This session will only contain query nodes
-     and query beta memory.
+     meaning only queries and inspection operations are allowed. Rules cannot be fired, and facts cannot
+     be inserted nor retracted. The session will contain query nodes, query beta memory, and sufficient
+     infrastructure for inspection operations.
 
   * :query-only? - When true indicates the rulebase or session should be deserialized in query-only mode,
-     meaning only queries are allowed, this session can be queried like any other session but rules can
-     no longer be fired, facts cannot be inserted nor retracted. This session will only contain query nodes
-     and query beta memory.
+     a more restrictive subset of read-only mode. Only queries are supported (inspection operations are
+     not available). Rules cannot be fired, and facts cannot be inserted nor retracted. This is a more
+     aggressive optimization than :read-only?, resulting in smaller memory footprint and serialization
+     size since only query nodes and query beta memory are preserved. Use this when you need queries
+     but not inspection.
 
    * :with-rulebase? - When true the rulebase is included in the serialized state of the session.  
      The *default* behavior is false when serializing a session via the serialize-session-state function.

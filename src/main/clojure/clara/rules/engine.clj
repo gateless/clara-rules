@@ -2214,7 +2214,15 @@
   (assemble-read-only (components session)))
 
 (defn rulebase->query-only-rulebase
-  "Construcs a query only network from a rulebase, the query only network only contains query nodes"
+  "Constructs a new query-only rulebase from an existing rulebase. The query-only network
+  contains only query nodes and strips out all production-related infrastructure:
+  - Alpha and beta root nodes (not needed for queries)
+  - Production nodes and rules (queries don't fire rules)
+  - Activation group functions (no rule firing)
+  - Node expression functions (queries use pre-compiled expressions)
+
+  This significantly reduces memory footprint for sessions that only need to execute queries.
+  Query nodes are preserved through the original rulebase structure's :query-nodes map."
   [rulebase]
   (assoc rulebase
          :alpha-roots {}
@@ -2240,6 +2248,17 @@
             [node-id node-memory]))))
 
 (defn assemble-query-only
+  "Assembles a query-only session from the given components. A query-only session is a more
+  restrictive subset of a read-only session - it supports queries only, not inspection operations.
+
+  This function:
+  1. Creates a minimal rulebase containing only query nodes
+  2. Extracts only the beta memory needed for those query nodes
+  3. Constructs a ReadOnlyLocalSession with the minimal rulebase and memory
+
+  Query-only sessions have significantly smaller memory footprint and serialization size compared
+  to both full sessions and read-only sessions, making them ideal for scenarios where only
+  query execution is needed."
   [{:keys [rulebase memory transport listeners get-alphas-fn]}]
   (let [query-only-rulebase (rulebase->query-only-rulebase rulebase)
         query-only-beta-memory (memory->query-only-beta-memory memory)
@@ -2252,6 +2271,10 @@
                            get-alphas-fn)))
 
 (defn as-query-only
+  "Converts an existing session into a query-only session. The resulting session supports
+  only query execution - inspection operations, rule firing, and fact insertion/retraction
+  are not available. This is a more aggressive optimization than as-read-only, resulting
+  in smaller memory footprint since only query nodes and their beta memory are preserved."
   [session]
   (assemble-query-only (components session)))
 
