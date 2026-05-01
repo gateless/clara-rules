@@ -4,7 +4,7 @@
 
 Clara is a forward-chaining rules engine written in Clojure(Script) with Java interoperability. It aims to simplify code with a developer-centric approach to expert systems. See [clara-rules.org](http://www.clara-rules.org) for more.
 
-NOTE: this fork only supports the JVM/Clojure, and not ClojureScript.
+NOTE: this fork only supports the JVM/Clojure, and not ClojureScript. See [CHANGES.md](CHANGES.md) for a full inventory of changes from upstream.
 
 # _Usage_
 
