@@ -1,5 +1,8 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.7
+* Update dependencies for futurama, ham-fisted collections, and core cache to latest versions.
+
 # 1.6.6
 
 ### Added
