@@ -4,11 +4,21 @@
 
 Clara is a forward-chaining rules engine written in Clojure(Script) with Java interoperability. It aims to simplify code with a developer-centric approach to expert systems. See [clara-rules.org](http://www.clara-rules.org) for more.
 
-NOTE: this fork only supports the JVM/Clojure, and not ClojureScript. See [CHANGES.md](CHANGES.md) for a full inventory of changes from upstream.
+NOTE: this fork only supports the JVM/Clojure, and not ClojureScript. See [CHANGES.md](CHANGES.md) for a full inventory of changes.
+
+# _History & Attribution_
+
+This project is an open source derivative work based on the Clara Rules project originally developed by Cerner and Oracle.
+
+All original code remains Copyright (c) 2018-2023 Oracle and/or its affiliates. All subsequent improvements and maintenance are Copyright (c) 2023 Gateless, Inc.
+
+# _Compability_
+
+This project retains the same API and namespaces as the original Clara Rules project, so it should be a drop-in replacement for any existing code using Clara Rules. The only exception is that ClojureScript support has been removed, so any code using Clara Rules in ClojureScript will need to be updated to use this fork. Some interfaces for more advanced features such as custom rules loaders and async rule firing have also been updated and may require some minor adjustments to existing code using those features. See [CHANGES.md](CHANGES.md) for a full inventory of changes.
 
 # _Usage_
 
-Here's a simple example. Complete documentation is at [clara-rules.org](http://www.clara-rules.org/docs/firststeps/).
+Here's a simple example. For the latest API docs and examples visit [here](https://cljdoc.org/d/com.github.gateless/clara-rules).
 
 ```clj
 (ns clara.support-example
@@ -85,7 +95,9 @@ and [YourKit YouMonitor](https://www.yourkit.com/youmonitor/).
 
 # LICENSE
 
-Copyright 2023 Gateless
+Copyright (c) 2023 Gateless, Inc.
+
+Copyright (c) 2018, 2023 Oracle and/or its affiliates.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
