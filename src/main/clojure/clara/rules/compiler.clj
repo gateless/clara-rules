@@ -1563,7 +1563,9 @@
                                  compilation-ctx (assoc compilation-ctx :cache-key cache-key)
                                  compiled-handler (some-> compilation-ctx :compile-ctx :production :handler resolve)
                                  compiled-expr (or compiled-handler
-                                                   (cache/lookup expr-cache cache-key))]
+                                                   (when-let [v (cache/lookup expr-cache cache-key)]
+                                                     (cache/hit expr-cache cache-key)
+                                                     v))]
                              (if compiled-expr
                                [:compiled [expr-key [compiled-expr compilation-ctx]]]
                                [:prepared [expr-key [expr compilation-ctx]]]))
@@ -2122,7 +2124,8 @@
                                :memory (eng/local-memory rulebase transport activation-group-sort-fn activation-group-fn)
                                :transport transport
                                :listeners (get options :listeners  [])
-                               :get-alphas-fn get-alphas-fn})]
+                               :get-alphas-fn get-alphas-fn
+                               :activation-cache (get options :activation-cache)})]
     session))
 
 (defn add-production-load-order
@@ -2196,7 +2199,10 @@
          options (cond-> options
                    (some? hierarchy)
                    (assoc :hierarchy hierarchy))
-         options-cache (get options :cache)
+         ;; Use :cache when supplied (honoring an explicit false, which disables
+         ;; caching), otherwise fall back to :session-cache. Using `or` here would
+         ;; collapse an explicit `false` to nil and re-enable the default cache.
+         options-cache (get options :cache (get options :session-cache))
          session-cache (cond
                          (true? options-cache)
                          default-session-cache

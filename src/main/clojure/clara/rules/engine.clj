@@ -1816,12 +1816,14 @@
   by blocking until it completes."
   [activation]
   (let [{:keys [node
-                token]} activation]
+                token]} activation
+        {:keys [rhs production]} node
+        {:keys [env]} production]
     (try
       (when (async-cancelled?)
         (throw (InterruptedException. "Activation cancelled.")))
       ;; Actually fire the rule RHS
-      (let [result ((:rhs node) token (:env (:production node)))]
+      (let [result (rhs token env)]
         (if (async? result)
           (->activation-output activation (!<!! result))
           (->activation-output activation result)))
@@ -1833,22 +1835,22 @@
   if an activation returns an async result then it is handled
   without blocking and the call returns an async result as well."
   [activation]
-  (let [{:keys [node
-                token]} activation]
-    (try
-      (when (async-cancelled?)
-        (throw (InterruptedException. "Activation cancelled.")))
-      ;; Actually fire the rule RHS
-      (let [result ((:rhs node) token (:env (:production node)))]
-        (if (async? result)
-          (async
-           (try
-             (->activation-output activation (!<! result))
-             (catch Exception e
-               (handle-fire-activation-exception activation e))))
-          (CompletableFuture/completedFuture (->activation-output activation result))))
-      (catch Exception e
-        (handle-fire-activation-exception activation e)))))
+  (async
+   (let [{:keys [node
+                 token]} activation
+         {:keys [rhs production]} node
+         {:keys [env]} production]
+     (try
+       (when (async-cancelled?)
+         (throw (InterruptedException. "Activation cancelled.")))
+        ;; Actually fire the rule RHS
+       (let [result (rhs token env)]
+         (try
+           (->activation-output activation (!<! result))
+           (catch Exception e
+             (handle-fire-activation-exception activation e))))
+       (catch Exception e
+         (handle-fire-activation-exception activation e))))))
 
 (defn- ->activation-rule-context
   "Use vectors for the insertion caches so that within an insertion type
@@ -1856,13 +1858,12 @@
   calls in insert-facts!.  This shouldn't have a functional impact, since any ordering
   should be valid, but makes traces less confusing to end users.
   It also prevents any laziness in the sequences."
-  [{:keys [node token]} to-fire-rules]
-  (cond-> {:token token
-           :node node}
-    to-fire-rules
-    (assoc :batched-logical-insertions (atom [])
-           :batched-unconditional-insertions (atom [])
-           :batched-rhs-retractions (atom []))))
+  [{:keys [node token]}]
+  {:token token
+   :node node
+   :batched-logical-insertions (atom [])
+   :batched-unconditional-insertions (atom [])
+   :batched-rhs-retractions (atom [])})
 
 (defn- fire-activations!
   "fire all activations in order"
@@ -1870,7 +1871,7 @@
   (platform/eager-for
    [activation activations]
     ;;; this the production expression, which could return an async result if parallel computing
-   (binding [*rule-context* (->activation-rule-context activation true)]
+   (binding [*rule-context* (->activation-rule-context activation)]
      (fire-activation! activation))))
 
 (defn- fire-activations-async!
@@ -1879,7 +1880,7 @@
   (platform/eager-for
    [activation activations]
     ;;; this the production expression, which could return an async result if parallel computing
-   (binding [*rule-context* (->activation-rule-context activation true)]
+   (binding [*rule-context* (->activation-rule-context activation)]
      (fire-activation-async! activation))))
 
 (defn- process-activations!
@@ -2068,7 +2069,7 @@
 
 (declare ->LocalSession)
 
-(deftype LocalSession [rulebase memory transport listener get-alphas-fn pending-operations]
+(deftype LocalSession [rulebase memory transport listener get-alphas-fn pending-operations activation-cache]
   ISession
   (insert [session facts]
 
@@ -2088,7 +2089,8 @@
                       transport
                       listener
                       get-alphas-fn
-                      new-pending-operations)))
+                      new-pending-operations
+                      activation-cache)))
 
   (retract [session facts]
 
@@ -2104,7 +2106,8 @@
                       transport
                       listener
                       get-alphas-fn
-                      new-pending-operations)))
+                      new-pending-operations
+                      activation-cache)))
 
   ;; Prior to issue 249 we only had a one-argument fire-rules method.  clara.rules/fire-rules will always call the two-argument method now
   ;; but we kept a one-argument version of the fire-rules in case anyone is calling the fire-rules protocol function or method on the session directly.
@@ -2122,7 +2125,8 @@
                       transport
                       (l/to-persistent! transient-listener)
                       get-alphas-fn
-                      [])))
+                      []
+                      activation-cache)))
   ;; These return CompletableFuture async results
   (fire-rules-async [session]
     (fire-rules-async session {}))
@@ -2139,7 +2143,8 @@
                        transport
                        (l/to-persistent! transient-listener)
                        get-alphas-fn
-                       []))))
+                       []
+                       activation-cache))))
 
   (query [session query params]
     (query* rulebase memory query params))
@@ -2149,11 +2154,8 @@
      :memory memory
      :transport transport
      :listeners (l/flatten-listener listener)
-     :get-alphas-fn get-alphas-fn}))
-
-(defn ->LocalSession
-  [rulebase memory transport listener get-alphas-fn pending-operations]
-  (LocalSession. rulebase memory transport listener get-alphas-fn pending-operations))
+     :get-alphas-fn get-alphas-fn
+     :activation-cache activation-cache}))
 
 (defn assemble
   "Assembles a session from the given components, which must be a map
@@ -2165,13 +2167,14 @@
    :listeners A vector of listeners implementing the clara.rules.listener/IPersistentListener protocol
    :get-alphas-fn The function used to return the alpha nodes for a fact of the given type."
 
-  [{:keys [rulebase memory transport listeners get-alphas-fn]}]
+  [{:keys [rulebase memory transport listeners get-alphas-fn activation-cache]}]
   (->LocalSession rulebase
                   memory
                   transport
                   (l/combine-listeners listeners)
                   get-alphas-fn
-                  []))
+                  []
+                  activation-cache))
 
 (defn- throw-unsupported-read-only-operation
   [op]

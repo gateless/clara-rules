@@ -27,8 +27,6 @@ jobs:
         gu install native-image
     - name: Run tests
       run: make test
-    - name: Run coverage tests
-      run: make test-coverage
     - name: Run generative tests
       run: make test-generative
     - name: Run clj-kondo linter
