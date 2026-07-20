@@ -29,7 +29,7 @@
   (alter-var-root #'allowed-ns-props-set
                   (constantly (set (flatten-coll props)))))
 
-(set-allowed-ns-props! :author :no-loop :salience)
+(set-allowed-ns-props! :author :cache :no-loop :salience)
 
 (defn get-ns-props
   "Returns a map of namespace properties for rules and queries, or nil if none are found."
@@ -348,7 +348,7 @@
                           (first body))
         definition (if body-properties (rest body) body)
         properties (if (map? body-properties)
-                     (merge body-properties extra-properties)
+                     (merge extra-properties body-properties)
                      extra-properties)
         {:keys [lhs rhs]} (split-lhs-rhs definition)]
     (cond-> (parse-rule* lhs rhs properties rule-env rule-meta)

@@ -106,8 +106,9 @@ since it diverged from upstream cerner/clara-rules, as of 2026-05-01.
   expression/accumulator join nodes.
 - **Namespace-level rule properties**: `dsl/get-ns-props`,
   `dsl/add-allowed-ns-props!`, `dsl/set-allowed-ns-props!`. Defaults to
-  `:author :no-loop :salience` — set ns metadata `^{:salience 100}` and rules
-  in that namespace inherit it.
+  `:author :cache :no-loop :salience` — set ns metadata `^{:salience 100}` and
+  rules in that namespace inherit it. Rule-level properties take precedence over
+  namespace-level properties when both define the same key.
 
 ## 6. Sum / sort accumulators
 - `acc/sum`: `:default-value` kw-arg (defaults to 0) so nil fields no longer NPE.
