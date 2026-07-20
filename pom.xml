@@ -5,9 +5,9 @@
   <groupId>com.github.gateless</groupId>
   <artifactId>clara-rules</artifactId>
   <name>clara-rules</name>
-  <version>1.6.7</version>
+  <version>1.6.8</version>
   <scm>
-    <tag>1.6.7</tag>
+    <tag>1.6.8</tag>
     <url>https://github.com/gateless/clara-rules</url>
     <connection>scm:git:git://github.com/gateless/clara-rules.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/gateless/clara-rules.git</developerConnection>
@@ -22,7 +22,7 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.12.4</version>
+      <version>1.12.5</version>
     </dependency>
     <dependency>
       <groupId>com.cnuernber</groupId>

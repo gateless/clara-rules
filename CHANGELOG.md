@@ -1,5 +1,9 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.6.8
+* Rule-level properties now take precedence over namespace-level properties when both define the same key (previously namespace properties overrode rule-level properties).
+* Add `:cache` to the default set of allowed namespace-level rule properties (now `:author :cache :no-loop :salience`).
+
 # 1.6.7
 * Update dependencies for futurama, ham-fisted collections, and core cache to latest versions.
 
