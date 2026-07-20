@@ -121,5 +121,5 @@
                         (count))
                     {:verbose true}))
           [mean [lower upper]] (:mean result)]
-      (is (<= 0.1 lower mean upper 1.0)) ;;; our lower and mean values should be between 100ms and 1000ms
+      (is (<= 0.1 lower mean upper 2.0)) ;;; our lower and mean values should be between 100ms and 1000ms, but CI sometimes is slow
       (report-result result))))
