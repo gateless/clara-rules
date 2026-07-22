@@ -1,5 +1,11 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.7.0
+* Add opt-in caching of rule right-hand-side (RHS) output across sessions. A rule opts in with a `:cache` prop; the caller passes a cache atom (any `clojure.core.cache/CacheProtocol`) as the `:cache` option to `fire-rules`/`fire-rules-async`. On a cache hit the stored RHS output is replayed and the RHS is skipped; on a miss the RHS runs and its output is recorded. Firing without a cache is unchanged. Cache policy (TTL, eviction, hit/miss metrics) is the caller's responsibility.
+* `fire-rules-async` now runs synchronous RHS bodies on the async executor rather than the calling thread (previously only asynchronous results were deferred). Dynamic bindings are conveyed, so behavior is unchanged for RHS bodies that do not depend on running on the calling thread specifically.
+* Add a `:default-props` option to `mk-session`/`defsession`: a map of rule properties merged into every rule (productions with an `:rhs`; queries are unaffected), beneath each rule's own props. Precedence is session-default < namespace-level < rule-level, so a rule can override or opt out (e.g. `{:cache false}`). For example, `:default-props {:cache true}` enables activation caching for all rules by default.
+* Upgrade futurama to 1.4.7.
+
 # 1.6.8
 * Rule-level properties now take precedence over namespace-level properties when both define the same key (previously namespace properties overrode rule-level properties).
 * Add `:cache` to the default set of allowed namespace-level rule properties (now `:author :cache :no-loop :salience`).

@@ -2127,11 +2127,29 @@
 
 (defn add-production-load-order
   "Adds ::rule-load-order to metadata of productions. Custom DSL's may need to use this if
-   creating a session in Clojure without calling mk-session below."
+   creating a session in Clojure without calling mk-session below.
+   Use add-production-load-data if you also want to merge default props."
   [productions]
   (map (fn [n production]
          (vary-meta production assoc ::rule-load-order (or n 0)))
        (range) productions))
+
+(defn add-production-load-data
+  "Adds ::rule-load-order to metadata of productions, and merges default props.
+  Custom DSL's may need to use this if creating a session in Clojure without calling mk-session below."
+  [productions {:keys [default-props]}]
+  (let [merge-with-default-props (partial merge default-props)
+        maybe-merge-default-props (if (and (map? default-props)
+                                           (not-empty default-props))
+                                    (fn do-merge
+                                      [production]
+                                      (update production :props merge-with-default-props))
+                                    identity)]
+    (map (fn [n production]
+           (cond-> (vary-meta production assoc ::rule-load-order (or n 0))
+             (:rhs production)
+             maybe-merge-default-props))
+         (range) productions)))
 
 (defn- classify-load-type
   [source]
@@ -2177,7 +2195,7 @@
          {:keys [productions
                  hierarchies]} (->> (mapcat load-source* sources)
                                     (group-by classify-load-type))
-         productions-loaded (add-production-load-order productions)
+         productions-loaded (add-production-load-data productions options)
          productions-unique (hs/set productions-loaded)
          productions-sorted (with-meta
                               (into (sorted-set-by production-load-order-comp) productions-unique)

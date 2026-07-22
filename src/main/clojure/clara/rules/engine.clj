@@ -1,20 +1,19 @@
 (ns clara.rules.engine
   "This namespace is for internal use and may move in the future. Most users should use only the clara.rules namespace."
   (:require [clojure.core.reducers :as r]
+            [clojure.core.cache.wrapped :as cache]
             [clojure.string :as string]
             [clara.rules.memory :as mem]
             [clara.rules.listener :as l]
             [clara.rules.platform :as platform]
+            [clara.rules.activation-cache.core :as ac]
             [clara.rules.update-cache.core :as uc]
             [clara.rules.update-cache.cancelling :as ca]
             [futurama.core :refer [async
-                                   async?
-                                   async-cancelled?
                                    <!
                                    <!*
                                    !<!
-                                   !<!!]])
-  (:import [java.util.concurrent CompletableFuture]))
+                                   !<!!] :as f]))
 
 ;; The accumulator is a Rete extension to run an accumulation (such as sum, average, or similar operation)
 ;; over a collection of values passing through the Rete network. This object defines the behavior
@@ -1772,6 +1771,31 @@
     (l/fire-activation! listener activation resulting-ops)
     {:token token :node node :ops resulting-ops}))
 
+(defn- activation-cache-enabled?
+  "Returns true if the caller supplied a cache to fire-rules, false otherwise."
+  []
+  (some? (get-in *current-session* [:options :cache])))
+
+(defn- activation-cache-for
+  "Returns the caller-supplied cache atom when caching applies to this node: a
+  cache was passed to fire-rules and the rule opted in via its `:cache` prop.
+  Returns nil otherwise, in which case firing behaves exactly as it does without
+  a cache."
+  [node]
+  (when (get-in node [:production :props :cache])
+    (get-in *current-session* [:options :cache])))
+
+(defn- replay-activation-output
+  "Builds an activation output from cached RHS output (a cache hit) without
+  running the RHS or reading the batched insertion atoms. The listener is still
+  notified so traces match a live activation; the returned ops flow through
+  process-activations! into working memory exactly as computed ops do."
+  [activation ops]
+  (let [{:keys [node token]} activation
+        {:keys [listener]} *current-session*]
+    (l/fire-activation! listener activation ops)
+    {:token token :node node :ops ops}))
+
 (defn- throw-activation-exception
   "If the rule fired an exception, help debugging by attaching
   details about the rule itself, cached insertions, and any listeners
@@ -1806,7 +1830,7 @@
 
 (defn- handle-fire-activation-exception
   [activation e]
-  (if (async-cancelled?)
+  (if (f/async-cancelled?)
     (throw e)
     (throw-activation-exception activation e)))
 
@@ -1816,15 +1840,49 @@
   by blocking until it completes."
   [activation]
   (let [{:keys [node
-                token]} activation]
+                token]} activation
+        {:keys [rhs production]} node
+        {:keys [env]} production]
     (try
-      (when (async-cancelled?)
+      (when (f/async-cancelled?)
         (throw (InterruptedException. "Activation cancelled.")))
-      ;; Actually fire the rule RHS
-      (let [result ((:rhs node) token (:env (:production node)))]
-        (if (async? result)
-          (->activation-output activation (!<!! result))
-          (->activation-output activation result)))
+      (let [result (rhs token env)]
+        (->activation-output activation (!<!! result)))
+      (catch Exception e
+        (handle-fire-activation-exception activation e)))))
+
+(defn- fire-activation-with-cache-support!
+  "Fire the rule's RHS represented by the activation node,
+  if an activation returns an async result then it is handled
+  by blocking until it completes.
+
+  When caching applies to the node, a cache hit replays the stored RHS output
+  and skips the RHS entirely; a miss runs the RHS as usual and records its
+  output under the activation's key."
+  [activation]
+  (let [{:keys [node
+                token]} activation
+        {:keys [rhs production]} node
+        {:keys [env]} production]
+    (try
+      (when (f/async-cancelled?)
+        (throw (InterruptedException. "Activation cancelled.")))
+      (let [cache-atom (activation-cache-for node)
+            cache-key (when cache-atom (ac/build-cache-key activation))
+            cached (if cache-atom
+                     (cache/lookup cache-atom cache-key ::cache-miss)
+                     ::cache-miss)]
+        (if-not (identical? cached ::cache-miss)
+          ;; Cache hit: replay the stored RHS output instead of running the RHS.
+          (do
+            (cache/hit cache-atom cache-key)
+            (replay-activation-output activation cached))
+          ;; Cache miss (or caching disabled): run the RHS.
+          (let [result (rhs token env)
+                {:keys [ops] :as output} (->activation-output activation (!<!! result))]
+            (when cache-atom
+              (cache/miss cache-atom cache-key ops))
+            output)))
       (catch Exception e
         (handle-fire-activation-exception activation e)))))
 
@@ -1833,22 +1891,54 @@
   if an activation returns an async result then it is handled
   without blocking and the call returns an async result as well."
   [activation]
-  (let [{:keys [node
-                token]} activation]
-    (try
-      (when (async-cancelled?)
-        (throw (InterruptedException. "Activation cancelled.")))
-      ;; Actually fire the rule RHS
-      (let [result ((:rhs node) token (:env (:production node)))]
-        (if (async? result)
-          (async
-           (try
-             (->activation-output activation (!<! result))
-             (catch Exception e
-               (handle-fire-activation-exception activation e))))
-          (CompletableFuture/completedFuture (->activation-output activation result))))
-      (catch Exception e
-        (handle-fire-activation-exception activation e)))))
+  (async
+   (let [{:keys [node
+                 token]} activation
+         {:keys [rhs production]} node
+         {:keys [env]} production]
+     (try
+       (when (f/async-cancelled?)
+         (throw (InterruptedException. "Activation cancelled.")))
+       (let [result (rhs token env)]
+         (->activation-output activation (!<! result)))
+       (catch Exception e
+         (handle-fire-activation-exception activation e))))))
+
+(defn- fire-activation-with-cache-support-async!
+  "Fire the rule's RHS represented by the activation node,
+  if an activation returns an async result then it is handled
+  without blocking and the call returns an async result as well.
+
+  Caching behaves as in fire-activation-with-cache-support!: a hit replays stored
+  RHS output, a miss records it once the (possibly async) RHS result resolves."
+  [activation]
+  (async
+   (let [{:keys [node
+                 token]} activation
+         {:keys [rhs production]} node
+         {:keys [env]} production]
+     (try
+       (when (f/async-cancelled?)
+         (throw (InterruptedException. "Activation cancelled.")))
+       (let [cache-atom (activation-cache-for node)
+             cache-key (when cache-atom
+                         (ac/build-cache-key activation))
+             cached (if cache-atom
+                      (cache/lookup cache-atom cache-key ::cache-miss)
+                      ::cache-miss)]
+         (if-not (identical? cached ::cache-miss)
+           ;; Cache hit: replay the stored RHS output instead of running the RHS.
+           (do
+             (cache/hit cache-atom cache-key)
+             (replay-activation-output activation cached))
+           ;; Cache miss (or caching disabled): run the RHS, recording on resolution.
+           (let [result (rhs token env)
+                 {:keys [ops] :as output} (->activation-output activation (!<! result))]
+             (when cache-atom
+               (cache/miss cache-atom cache-key ops))
+             output)))
+       (catch Exception e
+         (handle-fire-activation-exception activation e))))))
 
 (defn- ->activation-rule-context
   "Use vectors for the insertion caches so that within an insertion type
@@ -1864,23 +1954,14 @@
            :batched-unconditional-insertions (atom [])
            :batched-rhs-retractions (atom []))))
 
-(defn- fire-activations!
+(defn- fire-activations-with-handler!
   "fire all activations in order"
-  [activations]
+  [activations fire-activation-handler]
   (platform/eager-for
    [activation activations]
     ;;; this the production expression, which could return an async result if parallel computing
    (binding [*rule-context* (->activation-rule-context activation true)]
-     (fire-activation! activation))))
-
-(defn- fire-activations-async!
-  "fire all activations in order"
-  [activations]
-  (platform/eager-for
-   [activation activations]
-    ;;; this the production expression, which could return an async result if parallel computing
-   (binding [*rule-context* (->activation-rule-context activation true)]
-     (fire-activation-async! activation))))
+     (fire-activation-handler activation))))
 
 (defn- process-activations!
   "Flush the changes and updates made during activation of the rules"
@@ -1930,23 +2011,29 @@
 
 (defn- fire-rules!
   "Fire rules for the given nodes, sequentially one at a time"
-  [{:keys [transient-memory listener]} _options]
-  (do-fire-rules
-   transient-memory listener
-   (let [activations (mem/pop-activations! transient-memory 1)
-         rhs-activations (fire-activations! activations)]
-     (process-activations! rhs-activations))))
+  [{:keys [transient-memory listener]}]
+  (let [fire-activation-handler (if (activation-cache-enabled?)
+                                  fire-activation-with-cache-support!
+                                  fire-activation!)]
+    (do-fire-rules
+     transient-memory listener
+     (let [activations (mem/pop-activations! transient-memory 1)
+           rhs-activations (fire-activations-with-handler! activations fire-activation-handler)]
+       (process-activations! rhs-activations)))))
 
 (defn- fire-rules-async!
   "Fire rules for the given nodes supporting async behavior."
-  [{:keys [transient-memory listener]} options]
+  [{:keys [transient-memory listener options]}]
   (async
-   (do-fire-rules
-    transient-memory listener
-    (let [pop-activations-batch-size (or (:parallel-batch-size options) 1)
-          activations (mem/pop-activations! transient-memory pop-activations-batch-size)
-          rhs-activations (fire-activations-async! activations)]
-      (process-activations! (<!* rhs-activations))))))
+   (let [fire-activation-handler (if (activation-cache-enabled?)
+                                   fire-activation-with-cache-support-async!
+                                   fire-activation-async!)]
+     (do-fire-rules
+      transient-memory listener
+      (let [pop-activations-batch-size (or (:parallel-batch-size options) 1)
+            activations (mem/pop-activations! transient-memory pop-activations-batch-size)
+            rhs-activations (fire-activations-with-handler! activations fire-activation-handler)]
+        (process-activations! (<!* rhs-activations)))))))
 
 (defn- fire-rules*
   [rulebase memory transport listener get-alphas-fn pending-operations opts fire-rules-handler]
@@ -1959,7 +2046,8 @@
                  :insertions (atom 0)
                  :get-alphas-fn get-alphas-fn
                  :pending-updates update-cache
-                 :listener listener}]
+                 :listener listener
+                 :options opts}]
     (binding [*current-session* session]
       (if-not (:cancelling opts)
         ;; We originally performed insertions and retractions immediately after the insert and retract calls,
@@ -2006,7 +2094,7 @@
                 (binding [*pending-external-retractions* (atom facts)]
                   (external-retract-loop get-alphas-fn memory transport listener)))))
 
-          (fire-rules-handler session opts))
+          (fire-rules-handler session))
 
         (let [insertions (sequence
                           (comp (filter (fn [pending-op]
@@ -2042,7 +2130,7 @@
                   root alpha-roots]
             (alpha-retract root fact-group memory transport listener))
 
-          (fire-rules-handler session opts))))))
+          (fire-rules-handler session))))))
 
 (defn- query*
   [rulebase memory query params]
