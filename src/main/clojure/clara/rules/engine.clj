@@ -2021,13 +2021,12 @@
 
 (defn- fire-rules*
   [rulebase memory transport listener get-alphas-fn pending-operations opts fire-rules-handler]
-  (let [update-cache (if (:cancelling opts)
+  (let [{:keys [cancelling
+                activation-cache
+                activation-cache-key-fn]} opts
+        update-cache (if cancelling
                        (ca/get-cancelling-update-cache)
                        (uc/get-ordered-update-cache))
-        activation-cache (:activation-cache opts)
-        activation-cache-key-fn (when activation-cache
-                                  (or (:activation-cache-key-fn opts)
-                                      ac/build-cache-key))
         session (cond-> {:rulebase rulebase
                          :transient-memory memory
                          :transport transport
@@ -2038,9 +2037,9 @@
                          :options opts}
                   activation-cache
                   (assoc :activation-cache activation-cache
-                         :activation-cache-key-fn activation-cache-key-fn))]
+                         :activation-cache-key-fn (or activation-cache-key-fn ac/build-cache-key)))]
     (binding [*current-session* session]
-      (if-not (:cancelling opts)
+      (if-not cancelling
         ;; We originally performed insertions and retractions immediately after the insert and retract calls,
         ;; but this had the downside of making a pattern like "Retract facts, insert other facts, and fire the rules"
         ;; perform at least three transitions between a persistent and transient memory.  Delaying the actual execution
