@@ -2146,9 +2146,9 @@
                                       (update production :props merge-with-default-props))
                                     identity)]
     (map (fn [n production]
-           (-> production
-               (vary-meta assoc ::rule-load-order (or n 0))
-               (maybe-merge-default-props)))
+           (cond-> (vary-meta production assoc ::rule-load-order (or n 0))
+             (:rhs production)
+             maybe-merge-default-props))
          (range) productions)))
 
 (defn- classify-load-type
