@@ -2137,18 +2137,18 @@
 (defn add-production-load-data
   "Adds ::rule-load-order to metadata of productions, and merges default props.
   Custom DSL's may need to use this if creating a session in Clojure without calling mk-session below."
-  [productions {:keys [default-props]}]
-  (let [merge-with-default-props (partial merge default-props)
-        maybe-merge-default-props (if (and (map? default-props)
-                                           (not-empty default-props))
-                                    (fn do-merge
-                                      [production]
-                                      (update production :props merge-with-default-props))
-                                    identity)]
+  [productions {:keys [default-rule-props]}]
+  (let [merge-with-default-rule-props (partial merge default-rule-props)
+        maybe-merge-default-rule-props (if (and (map? default-rule-props)
+                                                (not-empty default-rule-props))
+                                         (fn do-merge
+                                           [production]
+                                           (update production :props merge-with-default-rule-props))
+                                         identity)]
     (map (fn [n production]
            (cond-> (vary-meta production assoc ::rule-load-order (or n 0))
              (:rhs production)
-             maybe-merge-default-props))
+             maybe-merge-default-rule-props))
          (range) productions)))
 
 (defn- classify-load-type

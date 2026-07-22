@@ -1772,18 +1772,11 @@
     {:token token :node node :ops resulting-ops}))
 
 (defn- activation-cache-enabled?
-  "Returns true if the caller supplied a cache to fire-rules, false otherwise."
-  []
-  (some? (get-in *current-session* [:options :cache])))
-
-(defn- activation-cache-for
-  "Returns the caller-supplied cache atom when caching applies to this node: a
-  cache was passed to fire-rules and the rule opted in via its `:cache` prop.
-  Returns nil otherwise, in which case firing behaves exactly as it does without
-  a cache."
-  [node]
-  (when (get-in node [:production :props :cache])
-    (get-in *current-session* [:options :cache])))
+  "Returns true if caching is enabled for the current session if no args are supplied, or for the given node if given."
+  ([]
+   (boolean (:activation-cache *current-session*)))
+  ([node]
+   (boolean (get-in node [:production :props :cache]))))
 
 (defn- replay-activation-output
   "Builds an activation output from cached RHS output (a cache hit) without
@@ -1838,10 +1831,8 @@
   "Fire the rule's RHS represented by the activation node,
   if an activation returns an async result then it is handled
   by blocking until it completes."
-  [activation]
-  (let [{:keys [node
-                token]} activation
-        {:keys [rhs production]} node
+  [{:keys [node token] :as activation}]
+  (let [{:keys [rhs production]} node
         {:keys [env]} production]
     (try
       (when (f/async-cancelled?)
@@ -1859,42 +1850,38 @@
   When caching applies to the node, a cache hit replays the stored RHS output
   and skips the RHS entirely; a miss runs the RHS as usual and records its
   output under the activation's key."
-  [activation]
-  (let [{:keys [node
-                token]} activation
-        {:keys [rhs production]} node
-        {:keys [env]} production]
-    (try
-      (when (f/async-cancelled?)
-        (throw (InterruptedException. "Activation cancelled.")))
-      (let [cache-atom (activation-cache-for node)
-            cache-key (when cache-atom (ac/build-cache-key activation))
-            cached (if cache-atom
-                     (cache/lookup cache-atom cache-key ::cache-miss)
-                     ::cache-miss)]
-        (if-not (identical? cached ::cache-miss)
-          ;; Cache hit: replay the stored RHS output instead of running the RHS.
-          (do
-            (cache/hit cache-atom cache-key)
-            (replay-activation-output activation cached))
-          ;; Cache miss (or caching disabled): run the RHS.
-          (let [result (rhs token env)
-                {:keys [ops] :as output} (->activation-output activation (!<!! result))]
-            (when cache-atom
-              (cache/miss cache-atom cache-key ops))
-            output)))
-      (catch Exception e
-        (handle-fire-activation-exception activation e)))))
+  [{:keys [node token] :as activation}]
+  (if-not (activation-cache-enabled? node)
+    (fire-activation! activation)
+    (let [{:keys [rhs production]} node
+          {:keys [env]} production]
+      (try
+        (when (f/async-cancelled?)
+          (throw (InterruptedException. "Activation cancelled.")))
+        (let [{:keys [activation-cache
+                      activation-cache-key-fn]} *current-session*
+              activation-key (activation-cache-key-fn activation)
+              cached (cache/lookup activation-cache activation-key ::cache-miss)]
+          (if (identical? cached ::cache-miss)
+            ;; Cache miss: run the RHS.
+            (let [result (rhs token env)
+                  {:keys [ops] :as output} (->activation-output activation (!<!! result))]
+              (cache/miss activation-cache activation-key ops)
+              output)
+            ;; Cache hit: replay the stored RHS output instead of running the RHS.
+            (do
+              (cache/hit activation-cache activation-key)
+              (replay-activation-output activation cached))))
+        (catch Exception e
+          (handle-fire-activation-exception activation e))))))
 
 (defn- fire-activation-async!
   "Fire the rule's RHS represented by the activation node,
   if an activation returns an async result then it is handled
   without blocking and the call returns an async result as well."
-  [activation]
+  [{:keys [node token] :as activation}]
   (async
-   (let [{:keys [node
-                 token]} activation
-         {:keys [rhs production]} node
+   (let [{:keys [rhs production]} node
          {:keys [env]} production]
      (try
        (when (f/async-cancelled?)
@@ -1911,34 +1898,31 @@
 
   Caching behaves as in fire-activation-with-cache-support!: a hit replays stored
   RHS output, a miss records it once the (possibly async) RHS result resolves."
-  [activation]
-  (async
-   (let [{:keys [node
-                 token]} activation
-         {:keys [rhs production]} node
-         {:keys [env]} production]
-     (try
-       (when (f/async-cancelled?)
-         (throw (InterruptedException. "Activation cancelled.")))
-       (let [cache-atom (activation-cache-for node)
-             cache-key (when cache-atom
-                         (ac/build-cache-key activation))
-             cached (if cache-atom
-                      (cache/lookup cache-atom cache-key ::cache-miss)
-                      ::cache-miss)]
-         (if-not (identical? cached ::cache-miss)
-           ;; Cache hit: replay the stored RHS output instead of running the RHS.
-           (do
-             (cache/hit cache-atom cache-key)
-             (replay-activation-output activation cached))
-           ;; Cache miss (or caching disabled): run the RHS, recording on resolution.
-           (let [result (rhs token env)
-                 {:keys [ops] :as output} (->activation-output activation (!<! result))]
-             (when cache-atom
-               (cache/miss cache-atom cache-key ops))
-             output)))
-       (catch Exception e
-         (handle-fire-activation-exception activation e))))))
+  [{:keys [node token] :as activation}]
+  (if-not (activation-cache-enabled? node)
+    (fire-activation-async! activation)
+    (async
+     (let [{:keys [rhs production]} node
+           {:keys [env]} production]
+       (try
+         (when (f/async-cancelled?)
+           (throw (InterruptedException. "Activation cancelled.")))
+         (let [{:keys [activation-cache
+                       activation-cache-key-fn]} *current-session*
+               activation-key (activation-cache-key-fn activation)
+               cached (cache/lookup activation-cache activation-key ::cache-miss)]
+           (if (identical? cached ::cache-miss)
+             ;; Cache miss: run the RHS.
+             (let [result (rhs token env)
+                   {:keys [ops] :as output} (->activation-output activation (!<! result))]
+               (cache/miss activation-cache activation-key ops)
+               output)
+             ;; Cache hit: replay the stored RHS output instead of running the RHS.
+             (do
+               (cache/hit activation-cache activation-key)
+               (replay-activation-output activation cached))))
+         (catch Exception e
+           (handle-fire-activation-exception activation e)))))))
 
 (defn- ->activation-rule-context
   "Use vectors for the insertion caches so that within an insertion type
@@ -2040,14 +2024,21 @@
   (let [update-cache (if (:cancelling opts)
                        (ca/get-cancelling-update-cache)
                        (uc/get-ordered-update-cache))
-        session {:rulebase rulebase
-                 :transient-memory memory
-                 :transport transport
-                 :insertions (atom 0)
-                 :get-alphas-fn get-alphas-fn
-                 :pending-updates update-cache
-                 :listener listener
-                 :options opts}]
+        activation-cache (:activation-cache opts)
+        activation-cache-key-fn (when activation-cache
+                                  (or (:activation-cache-key-fn opts)
+                                      ac/build-cache-key))
+        session (cond-> {:rulebase rulebase
+                         :transient-memory memory
+                         :transport transport
+                         :insertions (atom 0)
+                         :get-alphas-fn get-alphas-fn
+                         :pending-updates update-cache
+                         :listener listener
+                         :options opts}
+                  activation-cache
+                  (assoc :activation-cache activation-cache
+                         :activation-cache-key-fn activation-cache-key-fn))]
     (binding [*current-session* session]
       (if-not (:cancelling opts)
         ;; We originally performed insertions and retractions immediately after the insert and retract calls,

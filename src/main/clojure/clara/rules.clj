@@ -39,12 +39,18 @@
   Note that this is purely a performance optimization and no guarantees are made at this time on whether a given rule's RHS will be called.
   When this option is used rule RHS code that is executed shouldn't do anything that impacts state other than perform logical insertions.
 
-  :cache <atom> (NEW, subject to change/updates in the future):
+  :activation-cache <atom> (NEW, subject to change/updates in the future):
   An atom wrapping a clojure.core.cache/CacheProtocol implementation, used to cache rule right-hand-side (RHS) output across sessions.
   A rule opts in via its own :cache prop (see clara.rules.activation-cache.core).  On a cache hit the stored RHS output is replayed and the
   RHS is skipped; on a miss the RHS runs and its output is recorded under the activation's key.  Firing without a cache is unchanged;
   the value must be a valid cache atom, and supplying anything else is unsupported and may throw.  Cache policy (TTL, eviction, hit/miss metrics)
-  is the responsibility of the caller's cache implementation."
+  is the responsibility of the caller's cache implementation.
+
+  :activation-cache-key-fn <fn> (NEW, subject to change/updates in the future):
+  A function used to derive the cache key for a cacheable activation, overriding the default
+  (clara.rules.activation-cache.core/build-cache-key).  It receives the activation map ({:node :token}) and must return a key;
+  equal activations must yield equal keys.  Only consulted when :activation-cache is also supplied and the rule opted in via its :cache prop;
+  choosing a sound key is the responsibility of the caller."
   ([session] (eng/fire-rules session {}))
   ([session opts] (eng/fire-rules session opts)))
 
@@ -67,12 +73,18 @@
   Note that this is purely a performance optimization and no guarantees are made at this time on whether a given rule's RHS will be called.
   When this option is used rule RHS code that is executed shouldn't do anything that impacts state other than perform logical insertions.
 
-  :cache <atom> (NEW, subject to change/updates in the future):
+  :activation-cache <atom> (NEW, subject to change/updates in the future):
   An atom wrapping a clojure.core.cache/CacheProtocol implementation, used to cache rule right-hand-side (RHS) output across sessions.
   A rule opts in via its own :cache prop (see clara.rules.activation-cache.core).  On a cache hit the stored RHS output is replayed and the
   RHS is skipped; on a miss the RHS runs and its output is recorded under the activation's key.  Firing without a cache is unchanged;
   the value must be a valid cache atom, and supplying anything else is unsupported and may throw.  Cache policy (TTL, eviction, hit/miss metrics)
-  is the responsibility of the caller's cache implementation."
+  is the responsibility of the caller's cache implementation.
+
+  :activation-cache-key-fn <fn> (NEW, subject to change/updates in the future):
+  A function used to derive the cache key for a cacheable activation, overriding the default
+  (clara.rules.activation-cache.core/build-cache-key).  It receives the activation map ({:node :token}) and must return a key;
+  equal activations must yield equal keys.  Only consulted when :activation-cache is also supplied and the rule opted in via its :cache prop;
+  choosing a sound key is the responsibility of the caller."
   ([session] (eng/fire-rules-async session {}))
   ([session opts] (eng/fire-rules-async session opts)))
 
@@ -228,10 +240,10 @@
   information might prove useful for debugging compilation errors within the rulebase, eg. rulebase serialization
   (ie. via Clara's durability support).
   Defaults to true, see clara.rules.compiler/omit-compile-ctx-default for more information.
-  * :default-props - A map of rule properties merged into every production (rule or query).
+  * :default-rule-props - A map of rule properties merged into every rule (productions with an :rhs); queries are unaffected.
   The defaults sit beneath each rule's own props, so precedence is session-default < namespace-level < rule-level; a rule
-  can override or opt out of a default (eg. a rule with {:cache false} stays false even when :default-props is {:cache true}).
-  For example, :default-props {:cache true} enables activation caching (see the :cache prop) for all rules by default.
+  can override or opt out of a default (eg. a rule with {:cache false} stays false even when :default-rule-props is {:cache true}).
+  For example, :default-rule-props {:cache true} enables activation caching (see the :cache prop) for all rules by default.
   This option also applies to defsession, which delegates to the same session creation.
 
   This is not supported in ClojureScript, since it requires eval to dynamically build a session. ClojureScript

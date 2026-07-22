@@ -2,10 +2,11 @@
   "Support for caching the output of rule right-hand-side (RHS) activations
   so it can be replayed across rules sessions instead of recomputed.
 
-  The engine consults a cache the caller supplies via the `:cache` fire-rules
-  option: an atom wrapping any `clojure.core.cache/CacheProtocol` implementation.
+  The engine consults a cache the caller supplies via the `:activation-cache`
+  fire-rules option: an atom wrapping any `clojure.core.cache/CacheProtocol` implementation.
   A rule opts in via its own `:cache` prop. This namespace provides
-  `build-cache-key`, which derives the key an activation is cached under. Any
+  `build-cache-key`, which derives the key an activation is cached under (callers
+  can override it per fire with the `:activation-cache-key-fn` fire-rules option). Any
   policy beyond basic lookup/hit/miss — TTL, tracking which entries were
   consulted, sweeping at the end of a run — is the responsibility of the caller's
   cache implementation.")
