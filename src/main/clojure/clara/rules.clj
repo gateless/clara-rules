@@ -228,7 +228,7 @@
   information might prove useful for debugging compilation errors within the rulebase, eg. rulebase serialization
   (ie. via Clara's durability support).
   Defaults to true, see clara.rules.compiler/omit-compile-ctx-default for more information.
-  * :default-props - A map of rule properties merged into every rule (productions with an :rhs; queries are unaffected).
+  * :default-props - A map of rule properties merged into every production (rule or query).
   The defaults sit beneath each rule's own props, so precedence is session-default < namespace-level < rule-level; a rule
   can override or opt out of a default (eg. a rule with {:cache false} stays false even when :default-props is {:cache true}).
   For example, :default-props {:cache true} enables activation caching (see the :cache prop) for all rules by default.
