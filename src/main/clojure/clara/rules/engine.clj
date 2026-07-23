@@ -319,10 +319,10 @@
     ;; Update the insertion count.
     (swap! insertions + (count facts))
 
-      ;; Track this insertion in our transient memory so logical retractions will remove it.
     (if unconditional
       (l/insert-facts! listener node token facts)
       (do
+        ;; Track logical insertions in our transient memory so logical retractions will remove them.
         (mem/add-insertions! transient-memory node token facts)
         (l/insert-facts-logical! listener node token facts)))
 
@@ -1752,9 +1752,9 @@
    "ExpressionJoinNode" "EJN"})
 
 (defn- ->activation-output
-  "Bind the contents of the cache atoms after the RHS is fired since they are used to send to the listener
-  and then again to flush updates.  They will be dereferenced again if an exception is caught, but in the error
-  case we aren't worried about performance."
+  "Dereference the rule-context's batched insertion/retraction atoms into the activation's ops after the RHS has
+  fired, since the ops are used both to notify the listener and later to flush updates.  On the error path the same
+  atoms are dereferenced again (in throw-activation-exception), but there we aren't worried about performance."
   [current-session rule-context activation _result]
   (let [{:keys [listener]} current-session
         {:keys [node
@@ -1791,7 +1791,7 @@
 
 (defn- throw-activation-exception
   "If the rule fired an exception, help debugging by attaching
-  details about the rule itself, cached insertions, and any listeners
+  details about the rule itself, its batched insertions, and any listeners
   while propagating the cause."
   [current-session rule-context activation exception]
   (let [{:keys [node
@@ -1847,9 +1847,10 @@
   if an activation returns an async result then it is handled
   by blocking until it completes.
 
-  When caching applies to the node, a cache hit replays the stored RHS output
-  and skips the RHS entirely; a miss runs the RHS as usual and records its
-  output under the activation's key."
+  When caching applies to the activation -- the rule opted in via its :cache prop
+  and the key-fn returns a non-nil key -- a cache hit replays the stored RHS
+  output and skips the RHS entirely; a miss runs the RHS as usual and records its
+  output under that key. Otherwise (opted out, or a nil key) the RHS runs uncached."
   [{:keys [activation-cache
            activation-cache-key-fn] :as current-session}
    rule-context
@@ -1877,9 +1878,9 @@
     (fire-activation! current-session rule-context activation)))
 
 (defn- fire-activation-async!
-  "Fire the rule's RHS represented by the activation node,
-  if an activation returns an async result then it is handled
-  without blocking and the call returns an async result as well."
+  "Fire the rule's RHS represented by the activation node on the async executor,
+  returning an async result. Both synchronous and asynchronous RHS results are
+  awaited without blocking the calling thread."
   [current-session rule-context {:keys [node token] :as activation}]
   (async
    (let [{:keys [rhs production]} node
@@ -1893,12 +1894,12 @@
          (handle-fire-activation-exception current-session rule-context activation e))))))
 
 (defn- fire-activation-with-cache-support-async!
-  "Fire the rule's RHS represented by the activation node,
-  if an activation returns an async result then it is handled
-  without blocking and the call returns an async result as well.
+  "Fire the rule's RHS represented by the activation node on the async executor,
+  returning an async result without blocking the calling thread.
 
   Caching behaves as in fire-activation-with-cache-support!: a hit replays stored
-  RHS output, a miss records it once the (possibly async) RHS result resolves."
+  RHS output, a miss records it once the (possibly async) RHS result resolves, and
+  an opted-out rule or a nil key runs the RHS uncached."
   [{:keys [activation-cache
            activation-cache-key-fn] :as current-session}
    rule-context

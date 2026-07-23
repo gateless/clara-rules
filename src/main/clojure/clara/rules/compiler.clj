@@ -60,6 +60,17 @@
   []
   (swap! default-compiler-cache empty))
 
+(defn- resolve-cache
+  "Resolve a cache option against a shared default cache.
+   nil or true selects the default; false disables caching; any other value is
+   used as-is (a caller-supplied cache atom). Used for both the :cache (session)
+   and :compiler-cache options so they share identical opt-out semantics."
+  [option default]
+  (cond
+    (true? option) default
+    (nil? option) default
+    :else option))
+
 ;; Protocol for loading a source of rules and fact hierarchies.
 (defprotocol IClaraSource
   (load-source [source]))
@@ -1547,8 +1558,7 @@
   [key->expr :- schema/NodeExprLookup
    options :- {sc/Keyword sc/Any}]
   (let [read-only? (:read-only? options false)
-        expr-cache (or (:compiler-cache options)
-                       default-compiler-cache)
+        expr-cache (resolve-cache (:compiler-cache options) default-compiler-cache)
         forms-per-eval (or (:forms-per-eval options)
                            forms-per-eval-default)
         hash-expr-fn (or (:hash-expr-fn options)
@@ -2214,13 +2224,7 @@
          options (cond-> options
                    (some? hierarchy)
                    (assoc :hierarchy hierarchy))
-         options-cache (get options :cache)
-         session-cache (cond
-                         (true? options-cache)
-                         default-session-cache
-                         (nil? options-cache)
-                         default-session-cache
-                         :else options-cache)
+         session-cache (resolve-cache (get options :cache) default-session-cache)
          hash-expr-fn (or (:hash-expr-fn options) hash)
          ;;; this is simpler than storing all the productions and options in the cache
          session-key [(hash-expr-fn productions-sorted)

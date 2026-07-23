@@ -15,12 +15,13 @@
   "Builds an activation cache key for the given activation (a map with `:node` and
   `:token`).
 
-  The key is the data the RHS output depends on: the rule's environment, name,
-  props, and the bindings it fired on. The rule name and namespace version are
-  already encoded in the rule's `:name`/`:props` by the caller, so this key
-  changes exactly when the rule logic or its inputs change. The full bindings are
-  stored (not a hash) so a deserialized key compares `=` to a freshly-computed
-  one with no chance of collision."
+  The key is the data the RHS output depends on: the rule's name, conditions
+  (`:lhs`), right-hand side (`:rhs`), environment, and props, plus the matched
+  facts and the bindings it fired on. Because the rule logic (`:lhs`/`:rhs`) and
+  the caller-supplied `:name`/`:props` are part of the key, it changes exactly
+  when the rule logic or its inputs change. The full bindings are stored (not a
+  hash) so a deserialized key compares `=` to a freshly-computed one with no
+  chance of collision."
   [{:keys [node token]}]
   (let [{:keys [production]} node
         {:keys [matches bindings]} token

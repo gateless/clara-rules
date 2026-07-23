@@ -48,8 +48,9 @@
 
   :activation-cache-key-fn <fn> (NEW, subject to change/updates in the future):
   A function used to derive the cache key for a cacheable activation, overriding the default
-  (clara.rules.activation-cache.core/build-cache-key).  It receives the activation map ({:node :token}) and must return a key;
-  equal activations must yield equal keys.  Only consulted when :activation-cache is also supplied and the rule opted in via its :cache prop;
+  (clara.rules.activation-cache.core/build-cache-key).  It receives the activation map ({:node :token}) and returns a key,
+  or nil to skip caching for that activation (the RHS then runs uncached).  Equal activations must yield equal keys.
+  Only consulted when :activation-cache is also supplied and the rule opted in via its :cache prop;
   choosing a sound key is the responsibility of the caller."
   ([session] (eng/fire-rules session {}))
   ([session opts] (eng/fire-rules session opts)))
@@ -82,8 +83,9 @@
 
   :activation-cache-key-fn <fn> (NEW, subject to change/updates in the future):
   A function used to derive the cache key for a cacheable activation, overriding the default
-  (clara.rules.activation-cache.core/build-cache-key).  It receives the activation map ({:node :token}) and must return a key;
-  equal activations must yield equal keys.  Only consulted when :activation-cache is also supplied and the rule opted in via its :cache prop;
+  (clara.rules.activation-cache.core/build-cache-key).  It receives the activation map ({:node :token}) and returns a key,
+  or nil to skip caching for that activation (the RHS then runs uncached).  Equal activations must yield equal keys.
+  Only consulted when :activation-cache is also supplied and the rule opted in via its :cache prop;
   choosing a sound key is the responsibility of the caller."
   ([session] (eng/fire-rules-async session {}))
   ([session opts] (eng/fire-rules-async session opts)))
