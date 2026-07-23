@@ -22,6 +22,7 @@
 ;; only being able to reach vars in their defining namespace.
 (def cold-runs (atom 0))
 (def actions-runs (atom 0))
+(def hot-runs (atom 0))
 
 (defn- fresh-cache
   "A caller-style activation cache: an atom-wrapped CacheProtocol. A basic cache
@@ -89,6 +90,15 @@
   (swap! actions-runs inc)
   (insert-unconditional! (->Hot ?t))
   (retract! (->Cold ?c)))
+
+(defrule hot-rule
+  "A second cacheable rule. Only added to the session in the cross-session test,
+  to show its activation is a miss there while the shared cold-rule hits."
+  {:cache true}
+  [Temperature (= ?t temperature)]
+  =>
+  (swap! hot-runs inc)
+  (insert! (->Hot ?t)))
 
 (defquery cold-query [] [Cold (= ?c temperature)])
 (defquery hot-query [] [Hot (= ?h temperature)])
@@ -179,6 +189,41 @@
     (is (= 1 after-1) "RHS runs on the first (miss) async fire")
     (is (= [10] (cold-temps s2)) "the cached RHS output is still inserted on an async hit")
     (is (= 1 after-2) "the RHS is skipped on an async hit")))
+
+(deftest test-cache-is-keyed-per-rule-across-sessions
+  ;; The activation cache key is derived from serializable rule + binding data,
+  ;; not session identity or rulebase composition. Session 1 knows only
+  ;; cold-rule and caches its activation on a miss. Session 2 is built
+  ;; separately and adds hot-rule: cold-rule replays from the shared cache (its
+  ;; RHS is skipped) while hot-rule -- new to the cache -- misses and runs.
+  ;;
+  ;; Both of clara's build-time caches are bypassed so the two sessions share no
+  ;; compiled state and only the value-based activation key can make them hit:
+  ;;   :cache false          -> skip the shared session cache (otherwise the two
+  ;;                            mk-session calls could return a cached session).
+  ;;   :compiler-cache <new> -> a fresh expression cache per call, so each
+  ;;                            session compiles its own RHS fn (passing false
+  ;;                            would fall through to the default cache).
+  (reset! cold-runs 0)
+  (reset! hot-runs 0)
+  (let [ca (fresh-cache)
+        fire (fn [session] (-> session
+                               (insert (->Temperature 10 "MCI"))
+                               (fire-rules {:activation-cache ca})))
+        s1 (fire (mk-session [cold-rule cold-query]
+                             :cache false
+                             :compiler-cache (cache/basic-cache-factory {})))
+        s2 (fire (mk-session [cold-rule hot-rule cold-query hot-query]
+                             :cache false
+                             :compiler-cache (cache/basic-cache-factory {})))]
+    (is (= 1 @cold-runs)
+        "cold-rule ran once on session 1's miss and hit the shared cache in session 2")
+    (is (= 1 @hot-runs)
+        "hot-rule, absent from session 1's cache, misses and runs in session 2")
+    (is (= [10] (cold-temps s1)))
+    (is (= [10] (cold-temps s2)) "the shared rule's Cold is replayed from cache in session 2")
+    (is (= [10] (sort (map :?h (query s2 hot-query))))
+        "the new rule's Hot is inserted on its own miss in session 2")))
 
 ;; ---------------------------------------------------------------------------
 ;; :activation-cache-key-fn override
