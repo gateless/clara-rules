@@ -60,6 +60,17 @@
   []
   (swap! default-compiler-cache empty))
 
+(defn- resolve-cache
+  "Resolve a cache option against a shared default cache.
+   nil or true selects the default; false disables caching; any other value is
+   used as-is (a caller-supplied cache atom). Used for both the :cache (session)
+   and :compiler-cache options so they share identical opt-out semantics."
+  [option default]
+  (cond
+    (true? option) default
+    (nil? option) default
+    :else option))
+
 ;; Protocol for loading a source of rules and fact hierarchies.
 (defprotocol IClaraSource
   (load-source [source]))
@@ -1547,8 +1558,7 @@
   [key->expr :- schema/NodeExprLookup
    options :- {sc/Keyword sc/Any}]
   (let [read-only? (:read-only? options false)
-        expr-cache (or (:compiler-cache options)
-                       default-compiler-cache)
+        expr-cache (resolve-cache (:compiler-cache options) default-compiler-cache)
         forms-per-eval (or (:forms-per-eval options)
                            forms-per-eval-default)
         hash-expr-fn (or (:hash-expr-fn options)
@@ -2127,11 +2137,29 @@
 
 (defn add-production-load-order
   "Adds ::rule-load-order to metadata of productions. Custom DSL's may need to use this if
-   creating a session in Clojure without calling mk-session below."
+   creating a session in Clojure without calling mk-session below.
+   Use add-production-load-data if you also want to merge default props."
   [productions]
   (map (fn [n production]
          (vary-meta production assoc ::rule-load-order (or n 0)))
        (range) productions))
+
+(defn add-production-load-data
+  "Adds ::rule-load-order to metadata of productions, and merges default props.
+  Custom DSL's may need to use this if creating a session in Clojure without calling mk-session below."
+  [productions {:keys [default-rule-props]}]
+  (let [merge-with-default-rule-props (partial merge default-rule-props)
+        maybe-merge-default-rule-props (if (and (map? default-rule-props)
+                                                (not-empty default-rule-props))
+                                         (fn do-merge
+                                           [production]
+                                           (update production :props merge-with-default-rule-props))
+                                         identity)]
+    (map (fn [n production]
+           (cond-> (vary-meta production assoc ::rule-load-order (or n 0))
+             (:rhs production)
+             maybe-merge-default-rule-props))
+         (range) productions)))
 
 (defn- classify-load-type
   [source]
@@ -2177,7 +2205,7 @@
          {:keys [productions
                  hierarchies]} (->> (mapcat load-source* sources)
                                     (group-by classify-load-type))
-         productions-loaded (add-production-load-order productions)
+         productions-loaded (add-production-load-data productions options)
          productions-unique (hs/set productions-loaded)
          productions-sorted (with-meta
                               (into (sorted-set-by production-load-order-comp) productions-unique)
@@ -2196,13 +2224,7 @@
          options (cond-> options
                    (some? hierarchy)
                    (assoc :hierarchy hierarchy))
-         options-cache (get options :cache)
-         session-cache (cond
-                         (true? options-cache)
-                         default-session-cache
-                         (nil? options-cache)
-                         default-session-cache
-                         :else options-cache)
+         session-cache (resolve-cache (get options :cache) default-session-cache)
          hash-expr-fn (or (:hash-expr-fn options) hash)
          ;;; this is simpler than storing all the productions and options in the cache
          session-key [(hash-expr-fn productions-sorted)
