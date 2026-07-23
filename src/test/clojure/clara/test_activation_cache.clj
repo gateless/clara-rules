@@ -235,3 +235,66 @@
     (fire 20)
     (is (= 1 @cold-runs)
         "constant key-fn makes the second async fire hit and skip the RHS")))
+
+;; ---------------------------------------------------------------------------
+;; A nil key from :activation-cache-key-fn disables caching for that activation
+;; ---------------------------------------------------------------------------
+
+(deftest test-nil-cache-key-fn-disables-caching
+  ;; A key-fn that returns nil opts the activation out of caching: the RHS runs
+  ;; on every fire even though the rule declares {:cache true} and a cache is
+  ;; supplied. The default key would cache and skip the RHS on the second fire.
+  (reset! cold-runs 0)
+  (let [base (mk-session [cold-rule cold-query])
+        ca (fresh-cache)
+        key-fn (fn [_] nil)
+        run (fn [] (-> base (insert (->Temperature 10 "MCI"))
+                       (fire-rules {:activation-cache ca :activation-cache-key-fn key-fn})))
+        s1 (run)
+        after-1 @cold-runs
+        s2 (run)
+        after-2 @cold-runs]
+    (is (= 1 after-1) "RHS runs on the first fire")
+    (is (= 2 after-2)
+        "a nil cache key disables caching, so the RHS runs again (the default key would give 1)")
+    (is (= [10] (cold-temps s1)) "facts are still inserted on the uncached path")
+    (is (= [10] (cold-temps s2)) "facts are still inserted when the RHS runs again")))
+
+(deftest test-nil-cache-key-fn-disables-caching-async
+  (reset! cold-runs 0)
+  (let [base (mk-session [cold-rule cold-query])
+        ca (fresh-cache)
+        key-fn (fn [_] nil)
+        run (fn [] (-> base (insert (->Temperature 10 "MCI"))
+                       (fire-rules-async {:activation-cache ca :activation-cache-key-fn key-fn})
+                       (!<!!)))
+        s1 (run)
+        after-1 @cold-runs
+        s2 (run)
+        after-2 @cold-runs]
+    (is (= 1 after-1) "RHS runs on the first async fire")
+    (is (= 2 after-2)
+        "a nil cache key disables caching on the async path too, so the RHS runs again")
+    (is (= [10] (cold-temps s1)))
+    (is (= [10] (cold-temps s2)))))
+
+(deftest test-cache-key-fn-nil-is-per-activation
+  ;; The key-fn decides per activation: returning nil for ?t=10 leaves those
+  ;; activations uncached (RHS every time), while ?t=20 gets a real key and
+  ;; caches normally (RHS once, then a hit).
+  (reset! cold-runs 0)
+  (let [base (mk-session [cold-rule cold-query])
+        ca (fresh-cache)
+        key-fn (fn [act]
+                 (when (not= 10 (get-in act [:token :bindings :?t]))
+                   (ac/build-cache-key act)))
+        fire (fn [t] (-> base (insert (->Temperature t "MCI"))
+                         (fire-rules {:activation-cache ca :activation-cache-key-fn key-fn})))]
+    (fire 20)
+    (is (= 1 @cold-runs) "?t=20 is a miss with a real key: RHS runs")
+    (fire 20)
+    (is (= 1 @cold-runs) "?t=20 hits the cached entry: RHS skipped")
+    (fire 10)
+    (is (= 2 @cold-runs) "?t=10 has a nil key: uncached, RHS runs")
+    (fire 10)
+    (is (= 3 @cold-runs) "?t=10 stays uncached: RHS runs again")))

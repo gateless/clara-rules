@@ -23,11 +23,12 @@
   one with no chance of collision."
   [{:keys [node token]}]
   (let [{:keys [production]} node
-        {:keys [bindings]} token
-        rule-name (:name production)
-        rule-env (or (:env production) {})
-        rule-props (or (:props production) {})]
-    {:env rule-env
-     :name rule-name
-     :props rule-props
+        {:keys [matches bindings]} token
+        {:keys [name env lhs rhs props]} production]
+    {:name name
+     :lhs lhs
+     :rhs rhs
+     :env env
+     :props props
+     :matches (mapv first matches)
      :bindings bindings}))
