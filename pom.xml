@@ -27,12 +27,12 @@
     <dependency>
       <groupId>com.cnuernber</groupId>
       <artifactId>ham-fisted</artifactId>
-      <version>3.029</version>
+      <version>3.032</version>
     </dependency>
     <dependency>
       <groupId>com.github.gateless</groupId>
       <artifactId>futurama</artifactId>
-      <version>1.4.7</version>
+      <version>1.4.8</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>

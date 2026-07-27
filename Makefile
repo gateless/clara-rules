@@ -34,6 +34,13 @@ lint: compile-test-java
 	clojure -M:dev:test:app:clj-kondo --copy-configs --dependencies --parallel --lint "$(shell clojure -A:dev:test -Spath)"
 	clojure -M:dev:test:app:clj-kondo --lint "src/main:src/test" --fail-level "error"
 
+deps-check:
+	clojure -M:dev:test:deps-antq
+
+deps-upgrade:
+	## we exclude core.async because it is manually upgraded in the deps.edn file to test multiple versions
+	clojure -M:dev:test:deps-antq --upgrade
+
 build: compile-main-java
 	clojure -X:jar :sync-pom true :jar "build/clara-rules.jar"
 
