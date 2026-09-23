@@ -22,17 +22,17 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.12.5</version>
+      <version>1.12.6</version>
     </dependency>
     <dependency>
       <groupId>com.cnuernber</groupId>
       <artifactId>ham-fisted</artifactId>
-      <version>3.032</version>
+      <version>3.034</version>
     </dependency>
     <dependency>
       <groupId>com.github.gateless</groupId>
       <artifactId>futurama</artifactId>
-      <version>1.4.8</version>
+      <version>1.5.1</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -42,12 +42,12 @@
     <dependency>
       <groupId>prismatic</groupId>
       <artifactId>schema</artifactId>
-      <version>1.4.1</version>
+      <version>1.4.2</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>core.cache</artifactId>
-      <version>1.2.263</version>
+      <version>1.2.999</version>
     </dependency>
   </dependencies>
   <build>

@@ -2,11 +2,11 @@
  :deps/prep-lib {:alias :build
                  :fn compile-main-java
                  :ensure "target/main/classes"}
- :deps {org.clojure/clojure {:mvn/version "1.12.5"}
-        org.clojure/core.cache {:mvn/version "1.2.263"}
-        com.github.gateless/futurama {:mvn/version "1.4.8"}
-        com.cnuernber/ham-fisted {:mvn/version "3.032"}
-        prismatic/schema {:mvn/version "1.4.1"}
+ :deps {org.clojure/clojure {:mvn/version "1.12.6"}
+        org.clojure/core.cache {:mvn/version "1.2.999"}
+        com.github.gateless/futurama {:mvn/version "1.5.1"}
+        com.cnuernber/ham-fisted {:mvn/version "3.034"}
+        prismatic/schema {:mvn/version "1.4.2"}
         org.clojure/data.fressian {:mvn/version "1.1.1"}}
 
  ;for more examples of aliases see: https://github.com/seancorfield/dot-clojure
@@ -16,16 +16,16 @@
           :ns-default build}
   :dev {:extra-paths ["dev"]
         :extra-deps {reloaded.repl/reloaded.repl {:mvn/version "0.2.4"}
-                     org.slf4j/slf4j-api {:mvn/version "2.0.18"}
-                     org.slf4j/slf4j-simple {:mvn/version "2.0.18"}
+                     org.slf4j/slf4j-api {:mvn/version "2.0.20"}
+                     org.slf4j/slf4j-simple {:mvn/version "2.0.20"}
                      org.clojure/math.combinatorics {:mvn/version "0.3.2"}
-                     djblue/portal {:mvn/version "0.67.1"}
+                     djblue/portal {:mvn/version "0.67.2"}
                      criterium/criterium {:mvn/version "0.4.6"}}}
 
   :app {:extra-paths ["app"]
         :extra-deps {com.github.clj-easy/graal-build-time {:mvn/version "1.0.6"}}}
 
-  :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2026.07.24"}}
+  :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2026.08.04"}}
               :main-opts ["-m" "clj-kondo.main"]}
 
   :test {:extra-paths ["src/test/clojure" "target/test/classes"]

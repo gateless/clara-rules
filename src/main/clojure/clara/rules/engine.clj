@@ -1781,12 +1781,13 @@
 (defn- replay-activation-output
   "Builds an activation output from cached RHS output (a cache hit) without
   running the RHS or reading the batched insertion atoms. The listener is still
-  notified so traces match a live activation; the returned ops flow through
+  notified, with the activation marked `:cache true` so traces can tell a hit
+  from a live activation; the returned ops flow through
   process-activations! into working memory exactly as computed ops do."
   [current-session activation ops]
   (let [{:keys [listener]} current-session
         {:keys [node token]} activation]
-    (l/fire-activation! listener activation ops)
+    (l/fire-activation! listener (assoc activation :cache true) ops)
     {:token token :node node :ops ops}))
 
 (defn- throw-activation-exception

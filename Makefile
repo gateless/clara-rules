@@ -1,4 +1,4 @@
-.PHONY: repl test clean compile-main-java compile-test-java deploy install format-check format-fix
+.PHONY: repl test clean compile-main-java compile-test-java deploy install format-check format-fix deps-check deps-upgrade
 
 SHELL := /bin/bash
 
@@ -38,7 +38,6 @@ deps-check:
 	clojure -M:dev:test:deps-antq
 
 deps-upgrade:
-	## we exclude core.async because it is manually upgraded in the deps.edn file to test multiple versions
 	clojure -M:dev:test:deps-antq --upgrade
 
 build: compile-main-java

@@ -10,6 +10,7 @@
                                  fire-rules fire-rules-async query insert!
                                  insert-unconditional! retract retract!]]
             [clara.rules.activation-cache.core :as ac]
+            [clara.tools.tracing :as t]
             [clojure.core.cache.wrapped :as cache]
             [clojure.data.fressian :as fres]
             [clara.rules.testfacts :refer [->Temperature ->Cold ->Hot]]
@@ -343,3 +344,18 @@
     (is (= 2 @cold-runs) "?t=10 has a nil key: uncached, RHS runs")
     (fire 10)
     (is (= 3 @cold-runs) "?t=10 stays uncached: RHS runs again")))
+
+(defn- fire-activation-events [session]
+  (filter #(= :fire-activation (:type %)) (t/get-trace session)))
+
+(deftest test-cache-hit-marked-in-trace
+  (doseq [[label fire] [["sync" (fn [s ca] (fire-rules s {:activation-cache ca}))]
+                        ["async" (fn [s ca] (!<!! (fire-rules-async s {:activation-cache ca})))]]]
+    (testing label
+      (let [base (t/with-tracing (mk-session [cold-rule cold-query]))
+            ca (fresh-cache)
+            run (fn [] (-> base (insert (->Temperature 10 "MCI")) (fire ca)))
+            [miss-event] (fire-activation-events (run))
+            [hit-event] (fire-activation-events (run))]
+        (is (not (contains? (:activation miss-event) :cache)) "a miss (live RHS) activation has no :cache flag")
+        (is (true? (:cache (:activation hit-event))) "a hit activation is marked :cache true")))))

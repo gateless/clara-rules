@@ -1382,7 +1382,7 @@
    alpha-graph :- [schema/AlphaNode]]
   (let [backward-edges (:backward-edges beta-graph)
         handle-expr (fn [id->expr s-expr id expr-key compilation-ctx]
-                      ;; clj-kondo 2026.07.24 infers a numeric key from ham-fisted's assoc!, so ignore it.
+                      ;; clj-kondo 2026.08.04 infers a numeric key from ham-fisted's assoc!, so ignore it.
                       #_{:clj-kondo/ignore [:type-mismatch]}
                       (hf/assoc! id->expr
                                  [id expr-key]

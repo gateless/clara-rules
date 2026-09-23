@@ -271,7 +271,7 @@
         (is (thrown? UnsupportedOperationException
                      (retract qo-restored))))
 
-      ;; clj-kondo 2026.07.24 infers wrong type, so ignore it.
+      ;; clj-kondo 2026.08.04 infers wrong type, so ignore it.
       #_{:clj-kondo/ignore [:type-mismatch]}
       (testing "Ensure the queries return same before and after serialization"
         (is (= (frequencies [{:?ws (dr/->UnpairedWindSpeed ws10)}])
