@@ -8,23 +8,35 @@ on:
     branches:
       - '**'
 
+env:
+  CLOJURE_CLI_VERSION: '1.12.5.1664'
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
-    - name: Tools setup
-      uses: jdx/mise-action@v4
+    - name: Setup GraalVM
+      uses: graalvm/setup-graalvm@v1
       with:
-        install: true
-        cache: true
-    - name: Tools config
-      run: |
-        echo "JAVA_HOME=$(mise where java)" >> $GITHUB_ENV
-        echo "GRAALVM_HOME=$(mise where java)" >> $GITHUB_ENV
-        echo "$(mise where java)/bin" >> $GITHUB_PATH
-        gu install native-image
+        version: '22.3.1'
+        java-version: '11'
+        components: 'native-image'
+        github-token: ${{secrets.GITHUB_TOKEN}}
+    - name: Setup Clojure
+      uses: DeLaGuardo/setup-clojure@13.6.1
+      with:
+        cli: ${{env.CLOJURE_CLI_VERSION}}
+    - name: Cache Clojure dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.m2/repository
+          ~/.gitlibs
+          ~/.deps.clj
+        key: cljdeps-${{runner.os}}-${{hashFiles('deps.edn')}}
+        restore-keys: cljdeps-${{runner.os}}-
     - name: Run tests
       run: make test
     - name: Run coverage tests
