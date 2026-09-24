@@ -5,9 +5,9 @@
   <groupId>com.github.gateless</groupId>
   <artifactId>clara-rules</artifactId>
   <name>clara-rules</name>
-  <version>1.6.8</version>
+  <version>1.7.0</version>
   <scm>
-    <tag>1.6.8</tag>
+    <tag>1.7.0</tag>
     <url>https://github.com/gateless/clara-rules</url>
     <connection>scm:git:git://github.com/gateless/clara-rules.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/gateless/clara-rules.git</developerConnection>
@@ -22,17 +22,17 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.12.5</version>
+      <version>1.12.6</version>
     </dependency>
     <dependency>
       <groupId>com.cnuernber</groupId>
       <artifactId>ham-fisted</artifactId>
-      <version>3.029</version>
+      <version>3.034</version>
     </dependency>
     <dependency>
       <groupId>com.github.gateless</groupId>
       <artifactId>futurama</artifactId>
-      <version>1.4.6</version>
+      <version>1.5.1</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -42,12 +42,12 @@
     <dependency>
       <groupId>prismatic</groupId>
       <artifactId>schema</artifactId>
-      <version>1.4.1</version>
+      <version>1.4.2</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>core.cache</artifactId>
-      <version>1.2.263</version>
+      <version>1.2.999</version>
     </dependency>
   </dependencies>
   <build>

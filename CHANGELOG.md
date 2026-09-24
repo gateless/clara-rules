@@ -1,5 +1,14 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.7.0
+* Add opt-in caching of rule right-hand-side (RHS) output across sessions. A rule opts in with a `:cache` prop; the caller passes a cache atom (any `clojure.core.cache/CacheProtocol`) as the `:activation-cache` option to `fire-rules`/`fire-rules-async`. On a cache hit the stored RHS output is replayed and the RHS is skipped; on a miss the RHS runs and its output is recorded. Firing without a cache is unchanged. Cache policy (TTL, eviction, hit/miss metrics) is the caller's responsibility.
+* Add a `:activation-cache-key-fn` option to `fire-rules`/`fire-rules-async` that overrides the default activation cache key (`clara.rules.activation-cache.core/build-cache-key`). It receives the activation map (`{:node :token}`) and returns the key, or nil to skip caching for that activation (the RHS runs uncached). Only consulted when `:activation-cache` is supplied and the rule opted in; choosing a sound key is the caller's responsibility.
+* `fire-rules-async` now runs synchronous RHS bodies on the async executor rather than the calling thread (previously only asynchronous results were deferred). Dynamic bindings are conveyed, so behavior is unchanged for RHS bodies that do not depend on running on the calling thread specifically.
+* Add a `:default-rule-props` option to `mk-session`/`defsession`: a map of rule properties merged into every rule (productions with an `:rhs`; queries are unaffected), beneath each rule's own props. Precedence is session-default < namespace-level < rule-level, so a rule can override or opt out (e.g. `{:cache false}`). For example, `:default-rule-props {:cache true}` enables activation caching for all rules by default.
+* Mark activation cache hits in listener events: on a hit, the activation passed to `fire-activation!` has `:cache true`, so it also shows in the `:activation` of the `clara.tools.tracing` `:fire-activation` trace event. A live (uncached) activation has no `:cache` key, so its events are unchanged.
+* `:compiler-cache false` in `mk-session` now disables caching of compiled expressions. Previously `false` fell through to the default compiler cache. The `:cache` and `:compiler-cache` options now share the same semantics: nil or true selects the default cache, false disables caching, and any other value is used as the cache.
+* Upgrade futurama to 1.5.1, ham-fisted to 3.034, Clojure to 1.12.6, core.cache to 1.2.999, and schema to 1.4.2. With futurama 1.5.1, an RHS whose result value is a `Throwable` (returned, not thrown) now throws when the result is read.
+
 # 1.6.8
 * Rule-level properties now take precedence over namespace-level properties when both define the same key (previously namespace properties overrode rule-level properties).
 * Add `:cache` to the default set of allowed namespace-level rule properties (now `:author :cache :no-loop :salience`).

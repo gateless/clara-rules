@@ -3,6 +3,8 @@
             [clara.tools.testing-utils :as tu]
             [clara.rules :as r]
             [clara.rules.engine :as eng]
+            [clara.rules.compiler :as com]
+            [clojure.core.cache.wrapped :as cache]
             [clojure.string :as str]
             [clara.rules.accumulators :as acc]
             [clojure.main :as m])
@@ -16,6 +18,22 @@
             ExpressionJoinNode
             RootJoinNode]
            [clojure.lang ExceptionInfo]))
+
+(deftest test-resolve-cache-opt-out-semantics
+  ;; The :cache (session) and :compiler-cache options share these semantics via
+  ;; resolve-cache: nil/true select the shared default, a supplied cache is used
+  ;; as-is, and false disables caching. false must NOT fall through to the
+  ;; default -- that was a bug where (or option default) swallowed false.
+  (let [default (cache/basic-cache-factory {})
+        supplied (cache/basic-cache-factory {})]
+    (is (identical? default (#'com/resolve-cache nil default))
+        "nil selects the default cache")
+    (is (identical? default (#'com/resolve-cache true default))
+        "true selects the default cache")
+    (is (identical? supplied (#'com/resolve-cache supplied default))
+        "a caller-supplied cache is used as-is")
+    (is (false? (#'com/resolve-cache false default))
+        "false disables caching rather than falling through to the default")))
 
 ;; See https://github.com/cerner/clara-rules/pull/451 for more info
 (tu/def-rules-test test-nodes-have-named-fns

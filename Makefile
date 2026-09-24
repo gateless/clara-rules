@@ -1,4 +1,4 @@
-.PHONY: repl test clean compile-main-java compile-test-java deploy install format-check format-fix
+.PHONY: repl test clean compile-main-java compile-test-java deploy install format-check format-fix deps-check deps-upgrade
 
 SHELL := /bin/bash
 
@@ -33,6 +33,12 @@ clean:
 lint: compile-test-java
 	clojure -M:dev:test:app:clj-kondo --copy-configs --dependencies --parallel --lint "$(shell clojure -A:dev:test -Spath)"
 	clojure -M:dev:test:app:clj-kondo --lint "src/main:src/test" --fail-level "error"
+
+deps-check:
+	clojure -M:dev:test:deps-antq
+
+deps-upgrade:
+	clojure -M:dev:test:deps-antq --upgrade
 
 build: compile-main-java
 	clojure -X:jar :sync-pom true :jar "build/clara-rules.jar"
