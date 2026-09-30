@@ -4,6 +4,7 @@
    Note!  Currently this only supports the clara.rules.memory.PersistentLocalMemory implementation
           of memory."
   (:require [clara.rules.durability :as d]
+            [clara.rules.accumulators.wb-tree :as wb-tree]
             [clara.rules.memory :as mem]
             [clara.rules.engine :as eng]
             [clara.rules.compiler :as com]
@@ -12,7 +13,11 @@
             [clojure.main :as cm]
             [ham-fisted.api :as hf]
             [ham-fisted.set :as hs])
-  (:import [clara.rules.durability
+  (:import [clara.rules.accumulators.wb_tree
+            WBBag
+            WBMap
+            SortedMapView]
+           [clara.rules.durability
             MemIdx
             InternalMemIdx]
            [clara.rules.memory
@@ -330,6 +335,36 @@
     "clj/map"
     (fn clj-map-writer [wtr tag m] (write-with-meta wtr tag m write-map))
     (fn clj-map-reader [rdr] (read-with-meta rdr #(into {} %))))
+
+   "clara/sorted-bag"
+   (create-identity-based-handler
+    WBBag
+    "clara/sorted-bag"
+    (fn sorted-bag-writer [^Writer wtr tag b]
+      (.writeTag wtr tag 1)
+      (.writeObject wtr (wb-tree/bag-groups b)))
+    (fn sorted-bag-reader [^Reader rdr]
+      (wb-tree/read-bag (.readObject rdr))))
+
+   "clara/sorted-map"
+   (create-identity-based-handler
+    WBMap
+    "clara/sorted-map"
+    (fn sorted-map-writer [^Writer wtr tag m]
+      (.writeTag wtr tag 1)
+      (.writeObject wtr (wb-tree/map-pairs m)))
+    (fn sorted-map-reader [^Reader rdr]
+      (wb-tree/read-map (.readObject rdr))))
+
+   ;; A view holds its comparator. It is written under the clj/map tag, so it reads back as
+   ;; an ordinary map and the comparator is never serialized. It needs no reader of its own.
+   "clara/sorted-map-view"
+   (-> (create-identity-based-handler
+        SortedMapView
+        "clj/map"
+        (fn sorted-map-view-writer [wtr tag m] (write-with-meta wtr tag m write-map))
+        nil)
+       (dissoc :readers))
 
    "clj/treeset"
    (create-identity-based-handler

@@ -1,7 +1,8 @@
 (ns clara.rules.accumulators
   "A set of common accumulators usable in Clara rules."
   (:require [clara.rules.engine :as eng]
-            [schema.core :as s])
+            [schema.core :as s]
+            [clara.rules.accumulators.wb-tree :as wb-tree])
   (:refer-clojure :exclude [min max distinct count]))
 
 (defn accum
@@ -34,14 +35,26 @@
            :convert-return-fn identity}
           accum-map)))
 
+(defn drop-first [value]
+  (fn [rf]
+    (let [filtering (volatile! true)]
+      (fn
+        ([] (rf))
+        ([accum] (rf accum))
+        ([accum value']
+         (if (and @filtering
+                  (= value value'))
+           (do
+             (vreset! filtering false)
+             accum)
+           (rf accum value')))))))
+
 (defn- drop-one-of
   "Removes one instance of the given value from the sequence."
   [items value]
-  (let [pred #(not= value %)]
-    (into (empty items)
-          cat
-          [(take-while pred items)
-           (rest (drop-while pred items))])))
+  (into (empty items)
+        (drop-first value)
+        items))
 
 (defn reduce-to-accum
   "Creates an accumulator using a given reduce function with optional initial value and
@@ -212,6 +225,21 @@
      :reduce-fn (fn [items value] (conj items (field value)))
      :retract-fn (fn [items retracted] (drop-one-of items (field retracted)))})))
 
+;; The sorting accumulators below keep their state in the sorted bag and the sorted map from
+;; clara.rules.accumulators.wb-tree, not in Clojure sorted collections.
+;;
+;; A Clojure sorted collection holds its comparator, and a comparator is code. Accumulator
+;; state goes into working memory, and working memory must serialize. A var or a named fn
+;; serializes only by name, and an anonymous fn does not serialize at all. The earlier
+;; accumulators kept unsorted data in memory and sorted it only in convert-return-fn.
+;;
+;; The wb-tree collections hold data only. Each operation takes the comparator as an
+;; argument, so the comparator stays in the accumulator functions, which Clara builds again
+;; from the rules. The state stays sorted in memory, and it serializes as plain data.
+;;
+;; The state is a bag, not a set, because facts with equal sort keys must all stay. A
+;; retraction removes the fact that is = to the retracted fact. sorted-grouping-by returns a
+;; sorted map view, which holds the group comparator and serializes as an ordinary map.
 (defn sorting-by
   "Return a generic sorting accumulator. Behaves like clojure.core/sort-by.
   * `field` - required - The field of a fact to sort by.
@@ -222,10 +250,13 @@
             :or {comparator compare
                  convert-return-fn identity}}]
   {:pre [(ifn? convert-return-fn)]}
-  (assoc (all) :convert-return-fn
-         (comp convert-return-fn (fn do-sort
-                                   [return-items]
-                                   (sort-by field comparator return-items)))))
+  (let [cmp #(comparator (field %1) (field %2))]
+    (accum
+     {:reduce-fn #(wb-tree/insert cmp %1 %2)
+      :combine-fn #(wb-tree/merge-bags cmp %1 %2)
+      :initial-value wb-tree/empty-bag
+      :retract-fn #(wb-tree/remove-item cmp %1 %2)
+      :convert-return-fn (comp convert-return-fn wb-tree/bag-vec)})))
 
 (defn sorted-grouping-by
   "Return a generic sorted grouping accumulator. Behaves like clojure.core/group-by into a map
@@ -242,9 +273,29 @@
                                   sort-comparator compare
                                   convert-return-fn identity}}]
   {:pre [(ifn? convert-return-fn)]}
-  (update (grouping-by group-field convert-return-fn)
-          :convert-return-fn comp (fn do-sort [m]
-                                    (->> (for [[k vs] m]
-                                           [k (sort-by sort-field sort-comparator vs)])
-                                         (sort-by first group-comparator)
-                                         (into (array-map))))))
+  ;; group-comparator can be a var, and a var is not a java.util.Comparator.
+  (let [gcmp (fn [a b] (group-comparator a b))
+        scmp #(sort-comparator (sort-field %1) (sort-field %2))]
+    ;; The map and the bags in memory hold no comparator, so they serialize as data. Only
+    ;; the returned view holds gcmp, and it serializes as an ordinary map.
+    (accum
+     {:reduce-fn (fn [accum fact]
+                   (let [gf (group-field fact)
+                         g (wb-tree/map-get gcmp accum gf wb-tree/empty-bag)]
+                     (wb-tree/map-assoc gcmp accum gf (wb-tree/insert scmp g fact))))
+      :combine-fn (fn [a b]
+                    (wb-tree/map-merge-with gcmp #(wb-tree/merge-bags scmp %1 %2) a b))
+      :initial-value wb-tree/empty-map
+      :retract-fn (fn [accum fact]
+                    (let [gf (group-field fact)]
+                      (if-let [g (wb-tree/map-get gcmp accum gf)]
+                        (let [g (wb-tree/remove-item scmp g fact)]
+                          (if (pos? (wb-tree/bag-count g))
+                            (wb-tree/map-assoc gcmp accum gf g)
+                            (wb-tree/map-dissoc gcmp accum gf)))
+                        accum)))
+      :convert-return-fn (comp convert-return-fn
+                               (fn [accum]
+                                 (wb-tree/sorted-map-view
+                                  gcmp
+                                  (wb-tree/map-update-vals accum wb-tree/bag-vec))))})))
