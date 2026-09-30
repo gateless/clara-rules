@@ -1,7 +1,7 @@
-(ns clara.test-gb-tree
+(ns clara.test-wb-tree
   (:require [clojure.test :refer [deftest is testing]]
-            [clara.rules.accumulators.gb-tree :refer :all :as gb])
-  (:import [clara.rules.accumulators.gb_tree Node GBBag GBMap]
+            [clara.rules.accumulators.wb-tree :refer :all :as wb])
+  (:import [clara.rules.accumulators.wb_tree Node WBBag WBMap]
            [clojure.lang RT]
            [java.util Random]))
 
@@ -26,10 +26,26 @@
     0
     (let [^Node x node] (inc (max (height (.-l x)) (height (.-r x)))))))
 
-(defn- check-shape [^GBBag b]
-  (is (== (.-nkeys b) (#'gb/size (.-root b))))
-  (is (<= (.-nkeys b) (.-peak b)))
-  (is (<= (height (.-root b)) (inc (long (#'gb/limit (max 2 (.-peak b)))))))
+;; Checks the size field and the weight balance of every node.
+(defn- valid-node? [node]
+  (or (nil? node)
+      (let [^Node x node
+            l (.-l x)
+            r (.-r x)]
+        (and (== (.-size x) (+ 1 (long (#'wb/size l)) (long (#'wb/size r))))
+             (#'wb/balanced? l r)
+             (#'wb/balanced? r l)
+             (valid-node? l)
+             (valid-node? r)))))
+
+;; A child has at most 3/4 of the weight of its parent, so the height is at most
+;; log base 4/3 of (n + 1).
+(defn- max-height ^long [^long n]
+  (long (Math/ceil (/ (Math/log (inc n)) (Math/log (/ 4.0 3.0))))))
+
+(defn- check-shape [^WBBag b]
+  (is (valid-node? (.-root b)))
+  (is (<= (height (.-root b)) (max-height (#'wb/size (.-root b)))))
   (is (== (.-cnt b) (bag-reduce (fn [^long a _] (inc a)) 0 b))))
 
 (deftest basics
@@ -107,7 +123,7 @@
   (doseq [xs [(range 65536) (range 65535 -1 -1)]]
     (let [b (into-bag natural empty-bag xs)]
       (is (= 65536 (bag-count b)))
-      (is (<= (height (.-root ^GBBag b)) 33))
+      (check-shape b)
       (is (= (range 65536) (bag-seq b))))))
 
 ;; The reference is a sorted map from key to the vector of items, in insertion order.
@@ -133,7 +149,7 @@
       (when (< i 20000)
         (let [k (.nextInt rnd span)
               item [k (.nextInt rnd 3)]
-              ;; Grow for the first half, then shrink, so the full rebuild runs.
+              ;; Grow for the first half, then shrink, so deletes rebalance.
               add? (< (.nextInt rnd 100) (if (< i 10000) 70 25))
               ref' (if add? (update ref k (fnil conj []) item) (ref-remove ref item))
               total' (long (cond add? (inc total) (identical? ref ref') total :else (dec total)))
@@ -149,12 +165,15 @@
   (is (= (bag-of natural 1 2 2 2 3) (merge-bags natural (bag-of natural 1 2 2) (bag-of natural 2 3))))
   (is (= (bag-of natural 1 2) (merge-bags natural empty-bag (bag-of natural 1 2))))
   (is (= (bag-of natural 1 2) (merge-bags natural (bag-of natural 1 2) empty-bag)))
-  (testing "similar sizes take the merge path and give a perfectly balanced tree"
-    (let [rnd (Random. 42)
-          ^GBBag m (merge-bags by-first (random-bag rnd 3000 100000) (random-bag rnd 2000 100000))
-          k (.-nkeys m)]
-      (is (== (height (.-root m)) (- 64 (Long/numberOfLeadingZeros k))))))
-  (testing "both paths agree with inserting one bag into the other"
+  (testing "lopsided and disjoint merges stay balanced"
+    (let [small (into-bag natural empty-bag (range 5))
+          big (into-bag natural empty-bag (range 100 50000))
+          mid (into-bag natural empty-bag (range 2000 2010))]
+      (doseq [[a b] [[small big] [big small] [mid big] [big mid]]]
+        (let [m (merge-bags natural a b)]
+          (is (= (sort (concat (bag-seq a) (bag-seq b))) (bag-seq m)))
+          (check-shape m)))))
+  (testing "merging agrees with inserting one bag into the other"
     (let [rnd (Random. 7)]
       (doseq [[na nb span] [[0 0 10] [1 1000 10] [1000 3 100000] [5 5 3]
                             [2000 2000 50] [3000 1500 100000] [40 4000 100000]]]
@@ -217,10 +236,9 @@
 (defn- map-of [cmp & kvs]
   (reduce (fn [m [k v]] (map-assoc cmp m k v)) empty-map (partition 2 kvs)))
 
-(defn- check-map-shape [^GBMap m]
-  (is (== (.-cnt m) (#'gb/size (.-root m))))
-  (is (<= (.-cnt m) (.-peak m)))
-  (is (<= (height (.-root m)) (inc (long (#'gb/limit (max 2 (.-peak m))))))))
+(defn- check-map-shape [^WBMap m]
+  (is (valid-node? (.-root m)))
+  (is (<= (height (.-root m)) (max-height (map-count m)))))
 
 (deftest map-basics
   (let [m (map-of natural 3 :c 1 :a 2 :b)]
@@ -262,7 +280,7 @@
         (check-map-shape m))
       (when (< i 20000)
         (let [k (.nextInt rnd span)
-              ;; Grow for the first half, then shrink, so the full rebuild runs.
+              ;; Grow for the first half, then shrink, so deletes rebalance.
               add? (< (.nextInt rnd 100) (if (< i 10000) 70 25))
               m' (if add? (map-assoc natural m k i) (map-dissoc natural m k))
               ref' (if add? (assoc ref k i) (dissoc ref k))]

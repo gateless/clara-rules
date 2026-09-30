@@ -1,7 +1,7 @@
 (ns clara.test-fressian
   (:require [clara.rules.durability :as d]
             [clara.rules.durability.fressian :as df]
-            [clara.rules.accumulators.gb-tree :as gb-tree]
+            [clara.rules.accumulators.wb-tree :as wb-tree]
             [clojure.data.fressian :as fres]
             [clara.rules.platform :as pform]
             [clojure.test :refer :all])
@@ -16,7 +16,7 @@
 
 (defn- tester-bag []
   (let [cmp #(compare (:x %1) (:x %2))]
-    (reduce #(gb-tree/insert cmp %1 %2) gb-tree/empty-bag
+    (reduce #(wb-tree/insert cmp %1 %2) wb-tree/empty-bag
             [(->Tester 2) (->Tester 1) {:x 2 :tag :other} (->Tester 2)])))
 
 (defn serde1 [x]
@@ -108,19 +108,19 @@
   (testing "sorted bag"
     (let [b (tester-bag)]
       (test-serde b b)
-      (is (= (gb-tree/bag-groups b) (gb-tree/bag-groups (serde b))))
-      (test-serde gb-tree/empty-bag gb-tree/empty-bag)))
+      (is (= (wb-tree/bag-groups b) (wb-tree/bag-groups (serde b))))
+      (test-serde wb-tree/empty-bag wb-tree/empty-bag)))
 
   (testing "sorted map"
-    (let [m (-> gb-tree/empty-map
-                (as-> m (gb-tree/map-assoc compare m 2 (tester-bag)))
-                (as-> m (gb-tree/map-assoc compare m 1 (->Tester 1))))]
+    (let [m (-> wb-tree/empty-map
+                (as-> m (wb-tree/map-assoc compare m 2 (tester-bag)))
+                (as-> m (wb-tree/map-assoc compare m 1 (->Tester 1))))]
       (test-serde m m)
-      (is (= (gb-tree/map-pairs m) (gb-tree/map-pairs (serde m))))
-      (test-serde gb-tree/empty-map gb-tree/empty-map)))
+      (is (= (wb-tree/map-pairs m) (wb-tree/map-pairs (serde m))))
+      (test-serde wb-tree/empty-map wb-tree/empty-map)))
 
   (testing "sorted map view serializes as an ordinary map"
-    (let [v (gb-tree/sorted-map-view compare (gb-tree/map-assoc compare gb-tree/empty-map 1 (->Tester 1)))]
+    (let [v (wb-tree/sorted-map-view compare (wb-tree/map-assoc compare wb-tree/empty-map 1 (->Tester 1)))]
       (test-serde-with-meta {1 (->Tester 1)} v)
       (is (not (sorted? (serde v))))))
 
@@ -157,8 +157,8 @@
         os (sorted-set "a" "c" "b")
         om (sorted-map "a" 1 "c" 3 "b" 2)
         b (tester-bag)
-        gm (gb-tree/map-assoc compare gb-tree/empty-map 1 b)
-        mv (gb-tree/sorted-map-view compare gm)
+        gm (wb-tree/map-assoc compare wb-tree/empty-map 1 b)
+        mv (wb-tree/sorted-map-view compare gm)
         r (serde (->Tester [v v l l ls ls m m s s sym sym os os om om b b gm gm mv mv]))]
     (doseq [[x y] (partition 2 (:x r))]
       (testing (str "Serde preserves identity for " (type x))

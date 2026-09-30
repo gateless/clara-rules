@@ -2,7 +2,7 @@
   "A set of common accumulators usable in Clara rules."
   (:require [clara.rules.engine :as eng]
             [schema.core :as s]
-            [clara.rules.accumulators.gb-tree :as gb-tree])
+            [clara.rules.accumulators.wb-tree :as wb-tree])
   (:refer-clojure :exclude [min max distinct count]))
 
 (defn accum
@@ -226,14 +226,14 @@
      :retract-fn (fn [items retracted] (drop-one-of items (field retracted)))})))
 
 ;; The sorting accumulators below keep their state in the sorted bag and the sorted map from
-;; clara.rules.accumulators.gb-tree, not in Clojure sorted collections.
+;; clara.rules.accumulators.wb-tree, not in Clojure sorted collections.
 ;;
 ;; A Clojure sorted collection holds its comparator, and a comparator is code. Accumulator
 ;; state goes into working memory, and working memory must serialize. A var or a named fn
 ;; serializes only by name, and an anonymous fn does not serialize at all. The earlier
 ;; accumulators kept unsorted data in memory and sorted it only in convert-return-fn.
 ;;
-;; The gb-tree collections hold data only. Each operation takes the comparator as an
+;; The wb-tree collections hold data only. Each operation takes the comparator as an
 ;; argument, so the comparator stays in the accumulator functions, which Clara builds again
 ;; from the rules. The state stays sorted in memory, and it serializes as plain data.
 ;;
@@ -252,11 +252,11 @@
   {:pre [(ifn? convert-return-fn)]}
   (let [cmp #(comparator (field %1) (field %2))]
     (accum
-     {:reduce-fn #(gb-tree/insert cmp %1 %2)
-      :combine-fn #(gb-tree/merge-bags cmp %1 %2)
-      :initial-value gb-tree/empty-bag
-      :retract-fn #(gb-tree/remove-item cmp %1 %2)
-      :convert-return-fn (comp convert-return-fn gb-tree/bag-vec)})))
+     {:reduce-fn #(wb-tree/insert cmp %1 %2)
+      :combine-fn #(wb-tree/merge-bags cmp %1 %2)
+      :initial-value wb-tree/empty-bag
+      :retract-fn #(wb-tree/remove-item cmp %1 %2)
+      :convert-return-fn (comp convert-return-fn wb-tree/bag-vec)})))
 
 (defn sorted-grouping-by
   "Return a generic sorted grouping accumulator. Behaves like clojure.core/group-by into a map
@@ -281,21 +281,21 @@
     (accum
      {:reduce-fn (fn [accum fact]
                    (let [gf (group-field fact)
-                         g (gb-tree/map-get gcmp accum gf gb-tree/empty-bag)]
-                     (gb-tree/map-assoc gcmp accum gf (gb-tree/insert scmp g fact))))
+                         g (wb-tree/map-get gcmp accum gf wb-tree/empty-bag)]
+                     (wb-tree/map-assoc gcmp accum gf (wb-tree/insert scmp g fact))))
       :combine-fn (fn [a b]
-                    (gb-tree/map-merge-with gcmp #(gb-tree/merge-bags scmp %1 %2) a b))
-      :initial-value gb-tree/empty-map
+                    (wb-tree/map-merge-with gcmp #(wb-tree/merge-bags scmp %1 %2) a b))
+      :initial-value wb-tree/empty-map
       :retract-fn (fn [accum fact]
                     (let [gf (group-field fact)]
-                      (if-let [g (gb-tree/map-get gcmp accum gf)]
-                        (let [g (gb-tree/remove-item scmp g fact)]
-                          (if (pos? (gb-tree/bag-count g))
-                            (gb-tree/map-assoc gcmp accum gf g)
-                            (gb-tree/map-dissoc gcmp accum gf)))
+                      (if-let [g (wb-tree/map-get gcmp accum gf)]
+                        (let [g (wb-tree/remove-item scmp g fact)]
+                          (if (pos? (wb-tree/bag-count g))
+                            (wb-tree/map-assoc gcmp accum gf g)
+                            (wb-tree/map-dissoc gcmp accum gf)))
                         accum)))
       :convert-return-fn (comp convert-return-fn
                                (fn [accum]
-                                 (gb-tree/sorted-map-view
+                                 (wb-tree/sorted-map-view
                                   gcmp
-                                  (gb-tree/map-update-vals accum gb-tree/bag-vec))))})))
+                                  (wb-tree/map-update-vals accum wb-tree/bag-vec))))})))
