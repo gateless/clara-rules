@@ -1,6 +1,7 @@
 (ns clara.test-fressian
   (:require [clara.rules.durability :as d]
             [clara.rules.durability.fressian :as df]
+            [clara.rules.accumulators.gb-tree :as gb-tree]
             [clojure.data.fressian :as fres]
             [clara.rules.platform :as pform]
             [clojure.test :refer :all])
@@ -12,6 +13,11 @@
   (> y x))
 
 (defrecord Tester [x])
+
+(defn- tester-bag []
+  (let [cmp #(compare (:x %1) (:x %2))]
+    (reduce #(gb-tree/insert cmp %1 %2) gb-tree/empty-bag
+            [(->Tester 2) (->Tester 1) {:x 2 :tag :other} (->Tester 2)])))
 
 (defn serde1 [x]
   (with-open [os (java.io.ByteArrayOutputStream.)
@@ -99,6 +105,25 @@
   (testing "record"
     (test-serde-with-meta (->Tester 10) (->Tester 10)))
 
+  (testing "sorted bag"
+    (let [b (tester-bag)]
+      (test-serde b b)
+      (is (= (gb-tree/bag-groups b) (gb-tree/bag-groups (serde b))))
+      (test-serde gb-tree/empty-bag gb-tree/empty-bag)))
+
+  (testing "sorted map"
+    (let [m (-> gb-tree/empty-map
+                (as-> m (gb-tree/map-assoc compare m 2 (tester-bag)))
+                (as-> m (gb-tree/map-assoc compare m 1 (->Tester 1))))]
+      (test-serde m m)
+      (is (= (gb-tree/map-pairs m) (gb-tree/map-pairs (serde m))))
+      (test-serde gb-tree/empty-map gb-tree/empty-map)))
+
+  (testing "sorted map view serializes as an ordinary map"
+    (let [v (gb-tree/sorted-map-view compare (gb-tree/map-assoc compare gb-tree/empty-map 1 (->Tester 1)))]
+      (test-serde-with-meta {1 (->Tester 1)} v)
+      (is (not (sorted? (serde v))))))
+
   (testing "sorted collections"
     (let [ss (sorted-set 1 10)
           ss-custom (with-meta (sorted-set-by custom-comparator 1 10)
@@ -131,7 +156,10 @@
         sym 'a
         os (sorted-set "a" "c" "b")
         om (sorted-map "a" 1 "c" 3 "b" 2)
-        r (serde (->Tester [v v l l ls ls m m s s sym sym os os om om]))]
+        b (tester-bag)
+        gm (gb-tree/map-assoc compare gb-tree/empty-map 1 b)
+        mv (gb-tree/sorted-map-view compare gm)
+        r (serde (->Tester [v v l l ls ls m m s s sym sym os os om om b b gm gm mv mv]))]
     (doseq [[x y] (partition 2 (:x r))]
       (testing (str "Serde preserves identity for " (type x))
         (is (identical? x y)

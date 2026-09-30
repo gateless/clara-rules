@@ -506,3 +506,39 @@
                       {:type  Long
                        :constraints ['(== this clara.test-durability/test-compilation-ctx-var)]})
                   (tu/get-all-ex-data e)))))))
+
+(defquery sorted-temps []
+  [?ts <- (acc/sorting-by :temperature) :from [Temperature]])
+
+(defquery grouped-temps []
+  [?ts <- (acc/sorted-grouping-by :location :temperature) :from [Temperature]])
+
+(deftest test-durability-sorted-accumulators
+  (let [s (-> (mk-session [sorted-temps grouped-temps] :cache false)
+              (insert (->Temperature 30 "MCI") (->Temperature 10 "LAX")
+                      (->Temperature 20 "MCI") (->Temperature 10 "MCI"))
+              fire-rules)
+        rulebase-baos (ByteArrayOutputStream.)
+        session-baos (ByteArrayOutputStream.)
+        mem-serializer (->LocalMemorySerializer (atom []))
+        _ (d/serialize-rulebase s (df/create-session-serializer rulebase-baos))
+        _ (d/serialize-session-state s (df/create-session-serializer session-baos) mem-serializer)
+        rulebase (d/deserialize-rulebase
+                  (df/create-session-serializer (ByteArrayInputStream. (.toByteArray rulebase-baos))))
+        restored (d/deserialize-session-state
+                  (df/create-session-serializer (ByteArrayInputStream. (.toByteArray session-baos)))
+                  mem-serializer
+                  {:base-rulebase rulebase})]
+    (is (= [10 10 20 30] (map :temperature (:?ts (first (query restored sorted-temps))))))
+    (is (= (query s sorted-temps) (query restored sorted-temps)))
+    (is (= (query s grouped-temps) (query restored grouped-temps)))
+    (testing "the restored accumulators still take inserts and retractions"
+      (let [change #(-> %
+                        (retract (->Temperature 10 "LAX"))
+                        (insert (->Temperature 15 "LAX") (->Temperature 20 "MCI"))
+                        fire-rules)
+            s2 (change s)
+            r2 (change restored)]
+        (is (= [10 15 20 20 30] (map :temperature (:?ts (first (query r2 sorted-temps))))))
+        (is (= (query s2 sorted-temps) (query r2 sorted-temps)))
+        (is (= (query s2 grouped-temps) (query r2 grouped-temps)))))))
