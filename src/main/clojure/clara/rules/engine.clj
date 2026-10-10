@@ -1434,6 +1434,7 @@
 
                 :when (some? converted-result)]
 
+          (mem/add-accum-filtered! memory node (:matches token) fact-bindings (vec filtered-facts))
           (send-accumulated node accum-condition accumulator result-binding token
                             converted-result fact-bindings transport memory listener))
 
@@ -1455,6 +1456,7 @@
           (when (some? converted-result)
             ;; Send the created accumulated item to the children.
             (doseq [token tokens]
+              (mem/add-accum-filtered! memory node (:matches token) join-bindings [])
               (send-accumulated node accum-condition accumulator result-binding token
                                 converted-result join-bindings transport memory listener))))
 
@@ -1470,6 +1472,9 @@
           tokens (mem/remove-tokens! memory node join-bindings tokens)
           convert-return-fn (:convert-return-fn accumulator)
           grouped-candidate-facts (mem/get-accum-reduced-all memory node join-bindings)]
+
+      (doseq [token tokens]
+        (mem/remove-accum-filtered! memory node (:matches token)))
 
       (cond
 
@@ -1591,6 +1596,12 @@
                     new-converted (when (some? accum-result)
                                     (convert-return-fn accum-result))]]
 
+        ;; Store the facts even when the result does not change, e.g. acc/min with a new larger fact.
+        (if (some? new-converted)
+          (mem/add-accum-filtered! memory node (:matches token) bindings
+                                   (into (vec previous-filtered-facts) new-filtered-facts))
+          (mem/remove-accum-filtered! memory node (:matches token) bindings))
+
         (cond
 
           ;; When both the new and previous result were nil do nothing.
@@ -1687,6 +1698,10 @@
                     new-converted (when (some? new-result)
                                     (convert-return-fn new-result))]]
 
+        (if (some? new-converted)
+          (mem/add-accum-filtered! memory node (:matches token) bindings (vec new-facts))
+          (mem/remove-accum-filtered! memory node (:matches token) bindings))
+
         (cond
 
           ;; When both the previous and new results are nil do nothing.
@@ -1722,21 +1737,39 @@
   ;; the join filter function.  Since the :matches are not used in the join filter function and the bindings in the
   ;; token will contain all bindings used in the "ancestor token" to join with these same facts, we can just pass the token
   ;; as-is to the join filter.
+  ;;
+  ;; A read-only session has no compiled join-filter-fn, so it cannot filter the facts again.
+  ;; The activation methods above store the filtered facts with mem/add-accum-filtered! each time they run the join filter.
+  ;; This lookup uses them first.  The key is the :matches of the token that entered this node.
+  ;; That token's :matches is the prefix before this node's entry in the descendant token.
+  ;; Sessions serialized before the filtered facts were stored have none, so the join filter runs again.
   IAccumInspect
   (token->matching-elements [this memory token]
     (let [join-bindings (-> token :bindings (select-keys (get-join-keys this)))
           fact-bindings (-> token :bindings (select-keys new-bindings))
-          accum-reduced (mem/get-accum-reduced memory this join-bindings (merge join-bindings fact-bindings))]
+          accum-bindings (merge join-bindings fact-bindings)
+          accum-reduced (mem/get-accum-reduced memory this join-bindings accum-bindings)
+          matches (:matches token)
+          node-match-idx (first (keep-indexed (fn [i [_ node-id]] (when (= id node-id) i)) matches))
+          filtered (if node-match-idx
+                     (mem/get-accum-filtered memory this (subvec matches 0 node-match-idx) accum-bindings)
+                     ::mem/no-accum-filtered)]
       ;; The functionality to throw conditions with meaningful information assumes that all bindings in the token
       ;; are meaningful to the join, which is not the case here since the token passed is from a descendant of this node, not
       ;; this node.  The generated error message also wouldn't make much sense in the context of session inspection.
       ;; We could create specialized error handling here, but in reality most cases that cause errors here would also cause
       ;; errors at rule firing time so the benefit would be limited.  Nevertheless there would be some benefit and it is
       ;; possible that we will do it in the future..
-      (if (not= accum-reduced ::mem/no-accum-reduced)
+      (cond
+        (not= filtered ::mem/no-accum-filtered)
+        filtered
+
+        (not= accum-reduced ::mem/no-accum-reduced)
         (for [fact accum-reduced
               :when (join-filter-fn token fact fact-bindings {})]
           fact)
+
+        :else
         []))))
 
 ;; This lives here as it is both close to the node that it represents, and is accessible to both clj and cljs
