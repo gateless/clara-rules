@@ -51,7 +51,7 @@
   ;; Returns the facts that passed the join filter of an accumulator node with a join filter.
   ;; left-matches are the :matches of the token that entered the node.
   ;; accum-bindings are the join bindings merged with the fact bindings.
-  ;; Returns ::no-accum-filtered when no facts are stored.  These facts are used only for inspection.
+  ;; Returns ::no-accum-filtered when no facts are stored.  The node and inspection read these facts.
   (get-accum-filtered [memory node left-matches accum-bindings])
 
   ;; Returns insertions that occurred at the given node for the given token.
@@ -858,7 +858,7 @@
                                (persistent-maps persistent-vals accum-filtered-memory)))))
 
 ;;; accum-filtered-memory holds the facts that passed the join filter of each accumulator node with a join filter.
-;;; Only inspection reads it.  The node replaces these facts each time it runs its join filter.
+;;; The node and inspection read it.  The node replaces these facts each time they change.
 ;;; It is nil in memory restored from sessions serialized before this field existed.
 (defrecord PersistentLocalMemory [rulebase
                                   activation-group-sort-fn

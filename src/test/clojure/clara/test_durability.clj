@@ -511,7 +511,25 @@
                                                   (->Temperature 20 "CHI")])}]
                (query old-ro-restored dr/temps-under-thresh)))
         (is (= [(conj (first expected) (->Temperature 50 "MCI"))]
-               (temps-under-threshold-accumulated old-ro-restored)))))))
+               (temps-under-threshold-accumulated old-ro-restored)))))
+
+    (testing "a full session serialized without filtered facts gives the same results after changes"
+      ;; The node finds no stored filtered facts, so it runs the join filter.
+      (let [old-restored (with-redefs-fn {#'d/index-accum-filtered-memory (constantly nil)}
+                           #(session-serde fired {}))
+            change (fn [s]
+                     (-> s
+                         (insert (->Temperature 45 "DEN") (->Temperature 60 "PHX"))
+                         fire-rules
+                         (retract (->Temperature 40 "LAX"))
+                         fire-rules))
+            changed (change fired)
+            old-changed (change old-restored)]
+        (is (= (frequencies (query changed dr/temps-under-thresh))
+               (frequencies (query old-changed dr/temps-under-thresh))))
+        (is (= [#{(->Temperature 45 "DEN") (->Temperature 30 "SAN") (->Temperature 20 "CHI")}]
+               (temps-under-threshold-accumulated changed)
+               (temps-under-threshold-accumulated old-changed)))))))
 
 (defn get-test-nodes
   [session]

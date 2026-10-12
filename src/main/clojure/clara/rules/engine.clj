@@ -1395,6 +1395,16 @@
         :when (join-node-matches node token fact bindings join-filter-fn (:env accum-condition))]
     fact))
 
+(defn- stored-or-filtered
+  "Returns the facts in candidate-facts that pass the join filter for the given token.
+   A stored entry is always exact, so it is used when present.  The node stores entries only for tokens it propagated.
+   Without an entry, which is also the case for sessions from older versions, the join filter runs."
+  [node memory token candidate-facts bindings join-filter-fn accum-condition]
+  (let [stored (mem/get-accum-filtered memory node (:matches token) bindings)]
+    (if (not= stored ::mem/no-accum-filtered)
+      stored
+      (vec (filter-accum-facts node token candidate-facts bindings join-filter-fn accum-condition)))))
+
 ;; A specialization of the AccumulateNode that supports additional tests
 ;; that have to occur on the beta side of the network. The key difference between this and the simple
 ;; accumulate node is the join-filter-fn, which accepts a token and a fact and filters out facts that
@@ -1473,16 +1483,13 @@
           convert-return-fn (:convert-return-fn accumulator)
           grouped-candidate-facts (mem/get-accum-reduced-all memory node join-bindings)]
 
-      (doseq [token tokens]
-        (mem/remove-accum-filtered! memory node (:matches token)))
-
       (cond
 
         (seq grouped-candidate-facts)
         (doseq [token tokens
                 [fact-bindings candidate-facts] grouped-candidate-facts
 
-                :let [filtered-facts (filter-accum-facts node token candidate-facts fact-bindings join-filter-fn accum-condition)]
+                :let [filtered-facts (stored-or-filtered node memory token candidate-facts fact-bindings join-filter-fn accum-condition)]
 
                 :when (or (seq filtered-facts)
                           ;; Even if there no filtered facts, if there are no new bindings an initial value
@@ -1512,7 +1519,11 @@
               (retract-accumulated node accum-condition accumulator result-binding token
                                    converted-result join-bindings transport memory listener))))
 
-        :else nil)))
+        :else nil)
+
+      ;; Removed after the retraction above, which reads these filtered facts.
+      (doseq [token tokens]
+        (mem/remove-accum-filtered! memory node (:matches token)))))
 
   (get-join-keys [node] binding-keys)
 
@@ -1557,7 +1568,7 @@
               ;; since the final result is guaranteed to be the same.
               :when (seq new-filtered-facts)
 
-              :let [previous-filtered-facts (filter-accum-facts node token previous-candidates bindings join-filter-fn accum-condition)
+              :let [previous-filtered-facts (stored-or-filtered node memory token previous-candidates bindings join-filter-fn accum-condition)
 
                     previous-accum-result-init (cond
                                                  (seq previous-filtered-facts)
@@ -1659,9 +1670,11 @@
       (doseq [;; Get all of the previously matched tokens so we can retract and re-send them.
               token matched-tokens
 
-              :let [previous-facts (filter-accum-facts node token previous-candidates bindings join-filter-fn accum-condition)
+              :let [previous-facts (stored-or-filtered node memory token previous-candidates bindings join-filter-fn accum-condition)
 
-                    new-facts (filter-accum-facts node token new-candidates bindings join-filter-fn accum-condition)]
+                    ;; Equal facts give the same join filter result, so removing the retracted facts from the filtered facts
+                    ;; gives the same facts, in the same order, as filtering new-candidates.
+                    new-facts (second (mem/remove-first-of-each facts previous-facts))]
 
               ;; The previous matching elements are a superset of the matching elements after retraction.
               ;; Therefore, if the counts before and after are equal nothing retracted actually matched
@@ -1674,9 +1687,7 @@
                     ;; elements before and after a right-retraction cannot be different.
                     previous-result (do-accumulate accumulator previous-facts)
 
-                    ;; TODO: Can we use the retract-fn here if present to improve performance?  We'd also potentially
-                    ;; avoid needing to filter facts twice above, since elements present both before and after retraction
-                    ;; will given to the join-filter-fn twice (once when creating previous-facts and once when creating new-facts).
+                    ;; TODO: Can we use the retract-fn here if present to improve performance?
                     ;; Note that any future optimizations here must ensure that the result propagated here is equal to the result
                     ;; that will be recreated as the previous result in right activate, and that this can be dependent on the order
                     ;; of candidates in the memory, since, for example (acc/all) can return both [A B] and [B A] but these are not equal.
@@ -1739,7 +1750,7 @@
   ;; as-is to the join filter.
   ;;
   ;; A read-only session has no compiled join-filter-fn, so it cannot filter the facts again.
-  ;; The activation methods above store the filtered facts with mem/add-accum-filtered! each time they run the join filter.
+  ;; The activation methods above keep the filtered facts current with mem/add-accum-filtered!, and read them through stored-or-filtered.
   ;; This lookup uses them first.  The key is the :matches of the token that entered this node.
   ;; That token's :matches is the prefix before this node's entry in the descendant token.
   ;; Sessions serialized before the filtered facts were stored have none, so the join filter runs again.
