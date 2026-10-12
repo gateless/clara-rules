@@ -48,6 +48,12 @@
   ;; accumulated items on this node.
   (get-accum-reduced-complete [memory node])
 
+  ;; Returns the facts that passed the join filter of an accumulator node with a join filter.
+  ;; left-matches are the :matches of the token that entered the node.
+  ;; accum-bindings are the join bindings merged with the fact bindings.
+  ;; Returns ::no-accum-filtered when no facts are stored.  The node and inspection read these facts.
+  (get-accum-filtered [memory node left-matches accum-bindings])
+
   ;; Returns insertions that occurred at the given node for the given token.
   ;; Returns a sequence of the form
   ;; [facts-inserted-for-one-rule-activation facts-inserted-for-another-rule-activation]
@@ -79,6 +85,14 @@
 
   ;; Removes the result of a reduced accumulator execution to the given memory and node.
   (remove-accum-reduced! [memory node join-bindings fact-bindings])
+
+  ;; Stores the facts that passed the join filter of an accumulator node with a join filter.
+  ;; See get-accum-filtered.
+  (add-accum-filtered! [memory node left-matches accum-bindings facts])
+
+  ;; Removes the filtered facts stored for the token with the given left-matches at the given node.
+  ;; Without accum-bindings, removes them for all accum-bindings of that token.
+  (remove-accum-filtered! [memory node left-matches] [memory node left-matches accum-bindings])
 
   ;; Add a record that a given fact twas inserted at a given node with
   ;; the given support. Used for truth maintenance.
@@ -457,7 +471,8 @@
                                ^Map beta-memory
                                ^Map accum-memory
                                ^Map production-memory
-                               ^NavigableMap activation-map]
+                               ^NavigableMap activation-map
+                               ^Map accum-filtered-memory]
 
   IMemoryReader
   (get-rulebase [memory] rulebase)
@@ -501,6 +516,9 @@
       {:join-bindings join-binding
        :fact-bindings fact-binding
        :result reduced}))
+
+  (get-accum-filtered [memory node left-matches accum-bindings]
+    (get-in accum-filtered-memory [(:id node) left-matches accum-bindings] ::no-accum-filtered))
 
   (get-insertions [memory node token]
     (get
@@ -628,6 +646,39 @@
                                                           [_ fact-binding-accum-map]
                                                           (not-empty (dissoc fact-binding-accum-map fact-bindings))))
                                 (not-empty join-binding-accum-map)))))
+
+  (add-accum-filtered! [memory node left-matches accum-bindings facts]
+    (hm/compute! accum-filtered-memory (:id node)
+                 (fn add-lmfm
+                   [_ left-matches-filtered-map]
+                   (if left-matches-filtered-map
+                     (let [left-matches-filtered-map (->mutable-map left-matches-filtered-map)]
+                       (hm/compute! left-matches-filtered-map left-matches
+                                    (fn add-abfm
+                                      [_ accum-bindings-filtered-map]
+                                      (assoc accum-bindings-filtered-map accum-bindings facts)))
+                       left-matches-filtered-map)
+                     {left-matches {accum-bindings facts}}))))
+
+  (remove-accum-filtered! [memory node left-matches]
+    (hm/compute-if-present! accum-filtered-memory (:id node)
+                            (fn remove-lmfm
+                              [_ left-matches-filtered-map]
+                              (let [left-matches-filtered-map (->mutable-map left-matches-filtered-map)]
+                                (hm/compute-if-present! left-matches-filtered-map left-matches
+                                                        (fn remove-abfm [_ _] nil))
+                                (not-empty left-matches-filtered-map)))))
+
+  (remove-accum-filtered! [memory node left-matches accum-bindings]
+    (hm/compute-if-present! accum-filtered-memory (:id node)
+                            (fn remove-lmfm
+                              [_ left-matches-filtered-map]
+                              (let [left-matches-filtered-map (->mutable-map left-matches-filtered-map)]
+                                (hm/compute-if-present! left-matches-filtered-map left-matches
+                                                        (fn remove-abfm
+                                                          [_ accum-bindings-filtered-map]
+                                                          (not-empty (dissoc accum-bindings-filtered-map accum-bindings))))
+                                (not-empty left-matches-filtered-map)))))
 
   ;; The value under each token in the map should be a sequence
   ;; of sequences of facts, with each inner sequence coming from a single
@@ -803,8 +854,12 @@
                                (persistent-maps persistent-vals production-memory)
                                (into {}
                                      (map (juxt key (comp ->persistent-coll val)))
-                                     activation-map)))))
+                                     activation-map)
+                               (persistent-maps persistent-vals accum-filtered-memory)))))
 
+;;; accum-filtered-memory holds the facts that passed the join filter of each accumulator node with a join filter.
+;;; The node and inspection read it.  The node replaces these facts each time they change.
+;;; It is nil in memory restored from sessions serialized before this field existed.
 (defrecord PersistentLocalMemory [rulebase
                                   activation-group-sort-fn
                                   activation-group-fn
@@ -812,7 +867,8 @@
                                   beta-memory
                                   accum-memory
                                   production-memory
-                                  activation-map]
+                                  activation-map
+                                  accum-filtered-memory]
   IMemoryReader
   (get-rulebase [memory] rulebase)
 
@@ -858,6 +914,9 @@
        :fact-bindings fact-binding
        :result reduced}))
 
+  (get-accum-filtered [memory node left-matches accum-bindings]
+    (get-in accum-filtered-memory [(:id node) left-matches accum-bindings] ::no-accum-filtered))
+
   (get-insertions [memory node token]
     (get
      (get production-memory (:id node) {})
@@ -888,7 +947,8 @@
                                (.put treemap
                                      activation-group
                                      (->activation-priority-queue activations false)))
-                             treemap))))
+                             treemap)
+                           (->mutable-map (or accum-filtered-memory {})))))
 
 (defn local-memory
   "Creates an persistent local memory for the given rule base."
@@ -897,6 +957,7 @@
   (->PersistentLocalMemory rulebase
                            activation-group-sort-fn
                            activation-group-fn
+                           (hf/hash-map)
                            (hf/hash-map)
                            (hf/hash-map)
                            (hf/hash-map)

@@ -11,8 +11,9 @@
             [clojure.java.io :as jio]
             [clojure.test :refer :all]
             [clara.rules.compiler :as com]
+            [clara.tools.inspect :as inspect]
             [clara.tools.testing-utils :as tu])
-  (:import [clara.rules.testfacts Temperature]
+  (:import [clara.rules.testfacts Temperature WindSpeed]
            [clara.rules.engine TestNode]
            [clara.rules.engine ReadOnlyLocalSession]
            [java.io ByteArrayInputStream ByteArrayOutputStream]))
@@ -403,6 +404,132 @@
       (is (= init-qresults
              restored-qresults1
              restored-qresults2)))))
+
+(defn session-serde
+  [s deserialize-opts]
+  (let [holder (atom [])
+        mem-serializer (->LocalMemorySerializer holder)]
+    (with-open [baos (ByteArrayOutputStream.)]
+      (d/serialize-session-state s (df/create-session-serializer baos) mem-serializer {:with-rulebase? true})
+      (with-open [bais (ByteArrayInputStream. (.toByteArray baos))]
+        (d/deserialize-session-state (df/create-session-serializer bais) mem-serializer deserialize-opts)))))
+
+(defn accumulated-facts
+  "Returns the facts accumulated by the accumulator conditions of the rule, one set per condition match."
+  [session rule-name]
+  (->> (inspect/inspect session)
+       :rule-matches
+       (some (fn [[rule explanations]]
+               (when (= rule-name (:name rule))
+                 explanations)))
+       (mapcat :matches)
+       (keep :facts-accumulated)
+       (mapv set)))
+
+(defn temps-under-threshold-accumulated
+  [session]
+  (accumulated-facts session "clara.durability-rules/find-temps-under-threshold"))
+
+;; Unlike find-temps-under-threshold, this accumulator also has an equality join on ?loc.
+;; The join bindings are then part of the accum memory key.
+(defrule find-temps-under-wind-speed
+  [WindSpeed (= ?loc location) (= ?ws windspeed)]
+  [?ts <- (acc/all) :from [Temperature (= location ?loc) (< temperature ?ws)]]
+  =>
+  (insert! (->TemperatureHistory (mapv :temperature ?ts))))
+
+;; A new matching fact above the minimum leaves the result unchanged but adds to the accumulated facts.
+(defrule find-min-temp-under-wind-speed
+  [WindSpeed (= ?loc location) (= ?ws windspeed)]
+  [?min <- (acc/min :temperature) :from [Temperature (= location ?loc) (< temperature ?ws)]]
+  =>
+  (insert! (->Cold ?min)))
+
+(deftest test-durability-read-only-accumulator-inspection
+  (let [fired (:fired-session (session-test (mk-session 'clara.durability-rules)))
+        expected [#{(->Temperature 40 "LAX") (->Temperature 30 "SAN") (->Temperature 20 "CHI")}]
+        restored (session-serde fired {})
+        ro-restored (session-serde fired {:read-only? true})]
+
+    (testing "inspection shows only the facts that passed the join filter"
+      (is (= expected
+             (temps-under-threshold-accumulated fired)
+             (temps-under-threshold-accumulated restored)
+             (temps-under-threshold-accumulated ro-restored)))
+      (is (= (set (inspect/get-root-facts fired))
+             (set (inspect/get-root-facts ro-restored)))))
+
+    (testing "inspection shows only the facts that passed the join filter when the accumulator has join bindings"
+      (let [rule-name "clara.test-durability/find-temps-under-wind-speed"
+            fired (-> (mk-session 'clara.test-durability)
+                      (insert (->Temperature 10 "MCI")
+                              (->Temperature 30 "MCI")
+                              (->Temperature 5 "LAX")
+                              (->WindSpeed 20 "MCI"))
+                      fire-rules)]
+        (is (= [#{(->Temperature 10 "MCI")}]
+               (accumulated-facts fired rule-name)
+               (accumulated-facts (session-serde fired {}) rule-name)
+               (accumulated-facts (session-serde fired {:read-only? true}) rule-name)))))
+
+    (testing "a restored session does not use stale filtered facts after its candidate facts change"
+      (let [insert-temps #(-> %
+                              (insert (->Temperature 45 "DEN") (->Temperature 60 "PHX"))
+                              fire-rules)
+            retract-temp #(-> %
+                              (retract (->Temperature 40 "LAX"))
+                              fire-rules)]
+        (is (= [#{(->Temperature 45 "DEN") (->Temperature 40 "LAX") (->Temperature 30 "SAN") (->Temperature 20 "CHI")}]
+               (temps-under-threshold-accumulated (insert-temps fired))
+               (temps-under-threshold-accumulated (insert-temps restored))))
+        (is (= [#{(->Temperature 30 "SAN") (->Temperature 20 "CHI")}]
+               (temps-under-threshold-accumulated (retract-temp fired))
+               (temps-under-threshold-accumulated (retract-temp restored))))))
+
+    (testing "the accumulated facts change when the accumulator result does not"
+      (let [rule-name "clara.test-durability/find-min-temp-under-wind-speed"
+            fired (-> (mk-session 'clara.test-durability)
+                      (insert (->Temperature 10 "MCI") (->WindSpeed 20 "MCI"))
+                      fire-rules
+                      (insert (->Temperature 15 "MCI") (->Temperature 25 "MCI"))
+                      fire-rules)]
+        (is (= [#{(->Temperature 10 "MCI") (->Temperature 15 "MCI")}]
+               (accumulated-facts fired rule-name)
+               (accumulated-facts (session-serde fired {:read-only? true}) rule-name)))))
+
+    (testing "a read-only session serialized again keeps the filtered facts"
+      (is (= expected
+             (temps-under-threshold-accumulated (session-serde ro-restored {:read-only? true})))))
+
+    (testing "a session serialized without filtered facts still deserializes in read-only mode"
+      ;; This is the shape of sessions serialized before the filtered facts were stored.
+      ;; The join filter cannot run in read-only mode, so inspection shows all candidate facts.
+      (let [old-ro-restored (with-redefs-fn {#'d/index-accum-filtered-memory (constantly nil)}
+                              #(session-serde fired {:read-only? true}))]
+        (is (= [{:?tut (dr/->TempsUnderThreshold [(->Temperature 40 "LAX")
+                                                  (->Temperature 30 "SAN")
+                                                  (->Temperature 20 "CHI")])}]
+               (query old-ro-restored dr/temps-under-thresh)))
+        (is (= [(conj (first expected) (->Temperature 50 "MCI"))]
+               (temps-under-threshold-accumulated old-ro-restored)))))
+
+    (testing "a full session serialized without filtered facts gives the same results after changes"
+      ;; The node finds no stored filtered facts, so it runs the join filter.
+      (let [old-restored (with-redefs-fn {#'d/index-accum-filtered-memory (constantly nil)}
+                           #(session-serde fired {}))
+            change (fn [s]
+                     (-> s
+                         (insert (->Temperature 45 "DEN") (->Temperature 60 "PHX"))
+                         fire-rules
+                         (retract (->Temperature 40 "LAX"))
+                         fire-rules))
+            changed (change fired)
+            old-changed (change old-restored)]
+        (is (= (frequencies (query changed dr/temps-under-thresh))
+               (frequencies (query old-changed dr/temps-under-thresh))))
+        (is (= [#{(->Temperature 45 "DEN") (->Temperature 30 "SAN") (->Temperature 20 "CHI")}]
+               (temps-under-threshold-accumulated changed)
+               (temps-under-threshold-accumulated old-changed)))))))
 
 (defn get-test-nodes
   [session]

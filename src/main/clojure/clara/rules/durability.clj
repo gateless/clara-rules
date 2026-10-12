@@ -319,6 +319,24 @@
                     (transient {}))
          persistent!)))
 
+(defn index-accum-filtered-memory [seen accum-filtered-mem]
+  (let [index-matches (fn [matches]
+                        (mapv (fn [[fact node-id]]
+                                [(find-index-or-add! seen fact) node-id])
+                              matches))
+        index-facts (fn [facts]
+                      (mapv #(find-index-or-add! seen %) facts))]
+    (update-vals accum-filtered-mem
+                 (fn [left-matches->filtered]
+                   (persistent!
+                    (reduce-kv (fn [m left-matches accum-bindings->facts]
+                                 (assoc! m
+                                         (index-matches left-matches)
+                                         (-> (index-update-bindings-keys #(index-bindings seen %) accum-bindings->facts)
+                                             (update-vals index-facts))))
+                               (transient {})
+                               left-matches->filtered))))))
+
 (defn index-beta-memory [internal-seen seen bmem]
   (let [index-update-tokens (fn [tokens]
                               (mapv #(index-token internal-seen seen %)
@@ -458,7 +476,8 @@
                                          (update :alpha-memory #(index-alpha-memory internal-seen seen %))
                                          (update :beta-memory #(index-beta-memory internal-seen seen %))
                                          (update :production-memory #(index-production-memory internal-seen seen %))
-                                         (update :activation-map #(index-activation-map internal-seen seen %)))]
+                                         (update :activation-map #(index-activation-map internal-seen seen %))
+                                         (update :accum-filtered-memory #(index-accum-filtered-memory seen %)))]
 
                          {:memory indexed
                           :indexed-facts (vec-indexed-facts seen idx-fact-arr-pair-fn)
