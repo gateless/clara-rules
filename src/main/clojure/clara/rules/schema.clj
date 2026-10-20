@@ -71,7 +71,7 @@
    (s/optional-key :doc) s/Str
    (s/optional-key :props) {s/Keyword s/Any}
    (s/optional-key :env) {s/Keyword s/Any}
-   (s/optional-key :handler) (s/maybe Function)
+   (s/optional-key :handler) (s/maybe s/Symbol)
    :lhs [Condition]
    :rhs s/Any})
 
@@ -80,7 +80,7 @@
    (s/optional-key :doc) s/Str
    (s/optional-key :props) {s/Keyword s/Any}
    (s/optional-key :env) {s/Keyword s/Any}
-   (s/optional-key :handler) (s/maybe Function)
+   (s/optional-key :handler) (s/maybe s/Symbol)
    :lhs [Condition]
    :params #{s/Keyword}})
 
