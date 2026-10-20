@@ -12,8 +12,8 @@
             [clojure.test :refer :all]
             [clara.rules.compiler :as com]
             [clara.tools.testing-utils :as tu])
-  (:import [clara.rules.testfacts Temperature]
-           [clara.rules.engine TestNode]
+  (:import [clara.rules.testfacts Temperature Cold]
+           [clara.rules.engine TestNode ProductionNode]
            [clara.rules.engine ReadOnlyLocalSession]
            [java.io ByteArrayInputStream ByteArrayOutputStream]))
 
@@ -506,3 +506,44 @@
                       {:type  Long
                        :constraints ['(== this clara.test-durability/test-compilation-ctx-var)]})
                   (tu/get-all-ex-data e)))))))
+
+(deftest test-deserialize-uses-precompiled-fns
+  (let [s (mk-session 'clara.durability-rules :cache false :compiler-cache false)
+        restored-rb (rb-serde s {:compiler-cache false})
+        rule-vars (->> (ns-interns 'clara.durability-rules) vals (filter (comp :rule meta)) set)
+        precompiled (->> (ns-interns 'clara.durability-rules) vals (mapcat (comp vals :clara.rules/exprs meta)) set)]
+    (testing "each LHS fn is a precompiled fn, with the compiler cache disabled"
+      (doseq [[[_ expr-node-type :as node-key] [f]] (:node-expr-fn-lookup restored-rb)
+              :when (not= :action-expr expr-node-type)]
+        (is (contains? precompiled f) (str node-key " was not precompiled"))))
+    (testing "each RHS fn of a production node is its rule var"
+      (doseq [[[id expr-node-type :as node-key] [f]] (:node-expr-fn-lookup restored-rb)
+              :when (and (= :action-expr expr-node-type)
+                         (instance? ProductionNode (get (:id-to-node restored-rb) id)))]
+        (is (contains? rule-vars f) (str node-key " was not precompiled"))))
+    (testing "the restored session gives the same query results"
+      (is (= (:query-results (session-test s))
+             (:query-results (session-test (d/assemble-restored-session restored-rb {}))))))))
+
+(deftest test-deserialize-without-compiler-cache
+  (testing "a serialized :cache-key does not break deserialization when the compiler cache is off"
+    (let [rule (dsl/parse-rule [[Temperature (< temperature 20) (= ?t temperature)]]
+                               (insert! (->Cold ?t)))
+          cold-query (dsl/parse-query [] [[?c <- Cold]])
+          ;; The default compiler cache adds a :cache-key to the ctx of the eval'd rule.
+          s (com/mk-session [[rule cold-query] :cache false])
+          restored (d/assemble-restored-session (rb-serde s {:compiler-cache false}) {})]
+      (is (= [{:?c (->Cold 10)}]
+             (-> restored
+                 (insert (->Temperature 10 "MCI"))
+                 (fire-rules)
+                 (query cold-query)))))))
+
+(deftest test-query-by-name-after-deserialization
+  (testing "a named query is found by its name when its map differs from the one in the rulebase"
+    (let [restored (d/assemble-restored-session (rb-serde (mk-session 'clara.durability-rules) nil) {})
+          {:keys [fired-session]} (session-test restored)
+          expected (query fired-session dr/cold-temp)]
+      (is (seq expected))
+      (is (= expected (query fired-session (assoc dr/cold-temp :extra true))))
+      (is (= expected (query fired-session (dissoc dr/cold-temp :handler)))))))
