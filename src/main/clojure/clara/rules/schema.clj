@@ -80,6 +80,7 @@
    (s/optional-key :doc) s/Str
    (s/optional-key :props) {s/Keyword s/Any}
    (s/optional-key :env) {s/Keyword s/Any}
+   (s/optional-key :handler) (s/maybe Function)
    :lhs [Condition]
    :params #{s/Keyword}})
 
@@ -174,8 +175,8 @@
 (def NodeCompilationValue
   (s/constrained {s/Keyword s/Any}
                  (fn [compilation]
-                   (let [expr-keys #{:alpha-expr :action-expr :join-filter-expr :test-expr :accum-expr}]
-                     (some expr-keys (keys compilation))))
+                   (let [expr-node-types #{:alpha-expr :action-expr :join-filter-expr :test-expr :accum-expr}]
+                     (some expr-node-types (keys compilation))))
                  "node-compilation-value"))
 
 (def NodeCompilationContext

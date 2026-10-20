@@ -3,6 +3,7 @@
    This is the Clara rules compiler, translating raw data structures into compiled versions and functions.
    Most users should use only the clara.rules namespace."
   (:require [clara.rules.engine :as eng]
+            [clara.rules.accumulators] ;;; for exists
             [clara.rules.schema :as schema]
             [clara.rules.platform :refer [jeq-wrap] :as platform]
             [clojure.core.cache.wrapped :as cache]
@@ -1370,6 +1371,21 @@
    node-id :- sc/Int]
   (= #{0} (get backward-edges node-id)))
 
+(defn- env-keys
+  "Only the env keys change an LHS form. The values are symbols at macro time and runtime values in a session."
+  [env]
+  (set (keys env)))
+
+(defn- join-filter-lhs-expr-key
+  "Returns the :compile-ctx :expr-key of a join filter, made of the inputs that compile-join-filter reads."
+  [node-type beta-node]
+  [:join-filter-expr
+   node-type
+   (:join-filter-expressions beta-node)
+   (:join-filter-join-bindings beta-node)
+   (:new-bindings beta-node)
+   (env-keys (:env beta-node))])
+
 (sc/defn extract-exprs :- schema/NodeExprLookup
   "Walks the Alpha and Beta graphs and extracts the expressions that will be used in the construction of the final network.
    The extracted expressions are stored by their key, [<node-id> <field-key>], this allows for the function to be retrieved
@@ -1381,12 +1397,12 @@
   [beta-graph :- schema/BetaGraph
    alpha-graph :- [schema/AlphaNode]]
   (let [backward-edges (:backward-edges beta-graph)
-        handle-expr (fn [id->expr s-expr id expr-key compilation-ctx]
+        handle-expr (fn [id->expr s-expr id expr-node-type compilation-ctx]
                       ;; clj-kondo 2026.08.04 infers a numeric key from ham-fisted's assoc!, so ignore it.
                       #_{:clj-kondo/ignore [:type-mismatch]}
                       (hf/assoc! id->expr
-                                 [id expr-key]
-                                 [s-expr (assoc compilation-ctx expr-key s-expr)])
+                                 [id expr-node-type]
+                                 [s-expr (assoc compilation-ctx expr-node-type s-expr)])
                       id->expr)
 
         id->expr (reduce (fn add-alpha-nodes
@@ -1405,7 +1421,8 @@
                                           id
                                           :alpha-expr
                                           {:file (or (:file cmeta) *file*)
-                                           :compile-ctx {:condition condition
+                                           :compile-ctx {:expr-key [:alpha-expr condition (env-keys env)]
+                                                         :condition condition
                                                          :env env
                                                          :msg "compiling alpha node"}})))
                          (hf/mut-map)
@@ -1459,7 +1476,8 @@
                                                                   (:env beta-node))
                                              id
                                              :join-filter-expr
-                                             {:compile-ctx {:condition condition
+                                             {:compile-ctx {:expr-key (join-filter-lhs-expr-key "ExpressionJoinNode" beta-node)
+                                                            :condition condition
                                                             :join-filter-expressions (:join-filter-expressions beta-node)
                                                             :env (:env beta-node)
                                                             :msg "compiling expression join node"}}))
@@ -1473,7 +1491,8 @@
                                                                       (:env beta-node))
                                                  id
                                                  :join-filter-expr
-                                                 {:compile-ctx {:condition condition
+                                                 {:compile-ctx {:expr-key (join-filter-lhs-expr-key "NegationWithJoinFilterNode" beta-node)
+                                                                :condition condition
                                                                 :join-filter-expressions (:join-filter-expressions beta-node)
                                                                 :env (:env beta-node)
                                                                 :msg "compiling negation with join filter node"}})
@@ -1482,22 +1501,28 @@
                                            (compile-test id (:constraints condition) (:env beta-node))
                                            id
                                            :test-expr
-                                           {:compile-ctx {:condition condition
+                                           {:compile-ctx {:expr-key [:test-expr (:constraints condition) (env-keys (:env beta-node))]
+                                                          :condition condition
                                                           :env (:env beta-node)
                                                           :msg "compiling test node"}})
-                        :accumulator (cond-> (handle-expr prev
-                                                          (compile-accum id
-                                                                         (if (:join-filter-expressions beta-node)
-                                                                           "AccumulateWithJoinFilterNode"
-                                                                           "AccumulateNode")
-                                                                         (:accumulator beta-node)
-                                                                         (:env beta-node))
-                                                          id
-                                                          :accum-expr
-                                                          {:compile-ctx {:condition condition
-                                                                         :accumulator (:accumulator beta-node)
-                                                                         :env (:env beta-node)
-                                                                         :msg "compiling accumulator"}})
+                        :accumulator (cond-> (let [node-type (if (:join-filter-expressions beta-node)
+                                                               "AccumulateWithJoinFilterNode"
+                                                               "AccumulateNode")]
+                                               (handle-expr prev
+                                                            (compile-accum id
+                                                                           node-type
+                                                                           (:accumulator beta-node)
+                                                                           (:env beta-node))
+                                                            id
+                                                            :accum-expr
+                                                            {:compile-ctx {:expr-key [:accum-expr
+                                                                                      node-type
+                                                                                      (:accumulator beta-node)
+                                                                                      (env-keys (:env beta-node))]
+                                                                           :condition condition
+                                                                           :accumulator (:accumulator beta-node)
+                                                                           :env (:env beta-node)
+                                                                           :msg "compiling accumulator"}}))
 
                                        (:join-filter-expressions beta-node)
                                        (handle-expr (compile-join-filter id
@@ -1508,7 +1533,8 @@
                                                                          (:env beta-node))
                                                     id
                                                     :join-filter-expr
-                                                    {:compile-ctx {:condition condition
+                                                    {:compile-ctx {:expr-key (join-filter-lhs-expr-key "AccumulateWithJoinFilterNode" beta-node)
+                                                                   :condition condition
                                                                    :join-filter-expressions (:join-filter-expressions beta-node)
                                                                    :env (:env beta-node)
                                                                    :msg "compiling accumulate with join filter node"}}))
@@ -1565,21 +1591,29 @@
                            forms-per-eval-default)
         hash-expr-fn (or (:hash-expr-fn options)
                          hash)
+        lhs-exprs (::lhs-exprs options {})
         prepare-expr (fn do-prepare-expr
-                       [[expr-key [expr compilation-ctx]]]
-                       (if read-only? ;;; read-only expressions cannot be cached and are replaced by a read-only-expr
-                         [:compiled [expr-key [read-only-expr compilation-ctx]]]
-                         (if expr-cache
+                       [[expr-node-type [expr compilation-ctx]]]
+                       (let [precompiled (or (some-> compilation-ctx :compile-ctx :production :handler resolve)
+                                             (get lhs-exprs (-> compilation-ctx :compile-ctx :expr-key)))]
+                         (cond
+                           read-only? ;;; read-only expressions cannot be cached and are replaced by a read-only-expr
+                           [:compiled [expr-node-type [read-only-expr compilation-ctx]]]
+
+                           precompiled
+                           [:compiled [expr-node-type [precompiled compilation-ctx]]]
+
+                           expr-cache
                            (let [cache-key [(hash-expr-fn expr)
                                             (hash-expr-fn compilation-ctx)]
                                  compilation-ctx (assoc compilation-ctx :cache-key cache-key)
-                                 compiled-handler (some-> compilation-ctx :compile-ctx :production :handler resolve)
-                                 compiled-expr (or compiled-handler
-                                                   (cache/lookup expr-cache cache-key))]
+                                 compiled-expr (cache/lookup expr-cache cache-key)]
                              (if compiled-expr
-                               [:compiled [expr-key [compiled-expr compilation-ctx]]]
-                               [:prepared [expr-key [expr compilation-ctx]]]))
-                           [:prepared [expr-key [expr compilation-ctx]]])))
+                               [:compiled [expr-node-type [compiled-expr compilation-ctx]]]
+                               [:prepared [expr-node-type [expr compilation-ctx]]]))
+
+                           :else
+                           [:prepared [expr-node-type [expr compilation-ctx]]])))
         batching-try-eval (fn do-compile-exprs
                             [exprs compilation-ctxs]
                             ;; Try to evaluate all of the expressions as a batch. If they fail the batch eval then we
@@ -1619,15 +1653,15 @@
           (for [[nspace ns-expr-group] (sort-by key (group-by (comp :ns second val) key->expr))
                 ;; Partitioning the number of forms to be evaluated, Java has a limit to the size of methods if we were
                 ;; evaluate all expressions at once it would likely exceed this limit and throw an exception.
-                expr-batch (partition-all forms-per-eval ns-expr-group) ;;;; [<node-expr-keys> [<expr> <ctx>]]
+                expr-batch (partition-all forms-per-eval ns-expr-group) ;;;; [<expr-node-types> [<expr> <ctx>]]
                 :let [grouped-exprs (->> (mapv prepare-expr expr-batch)
                                          (group-by first))
                       prepared-exprs (map second (:prepared grouped-exprs))
-                      node-expr-keys (mapv first prepared-exprs)
+                      expr-node-types (mapv first prepared-exprs)
                       exprs (mapv (comp first second) prepared-exprs)
                       compilation-ctxs (mapv (comp second second) prepared-exprs)
                       prev-compiled-exprs (map second (:compiled grouped-exprs))
-                      next-compiled-exprs (mapv vector node-expr-keys
+                      next-compiled-exprs (mapv vector expr-node-types
                                                 (with-bindings (if (and nspace
                                                                         (not read-only?))
                                                                  {#'*ns* (the-ns nspace)}
@@ -1870,6 +1904,21 @@
                 :beta-children (distinct node-ids)}
          (seq env) (assoc :env env))))))
 
+(defn build-lhs-exprs
+  "Returns a map of :compile-ctx :expr-key to LHS fn form for one production, as extract-exprs builds them for a session.
+   defrule and defquery compile these forms at load time.
+   mk-session finds the compiled fns by that key, which is made of condition data."
+  [production]
+  (let [id-counter (atom 0)
+        create-id-fn (fn [] (swap! id-counter inc))
+        beta-graph (to-beta-graph #{production} create-id-fn)
+        alpha-graph (to-alpha-graph beta-graph create-id-fn)]
+    (into {}
+          (keep (fn [[[_ expr-node-type] [expr ctx]]]
+                  (when-not (= :action-expr expr-node-type)
+                    [(-> ctx :compile-ctx :expr-key) expr])))
+          (extract-exprs beta-graph alpha-graph))))
+
 (sc/defn compile-alpha-nodes :- [{:id sc/Int
                                   :type sc/Any
                                   :alpha-fn schema/Function
@@ -2087,7 +2136,13 @@
 
         ;; Extract the expressions from the graphs and evaluate them in a batch manner.
         ;; This is a performance optimization, see Issue 381 for more information.
-        exprs (compile-exprs (extract-exprs beta-graph alpha-graph) options)
+        ;; defrule and defquery store their compiled LHS fns on the var, keyed by condition data.
+        ;; Equal keys from different productions collapse to one entry here.
+        lhs-exprs (into {} (mapcat (fn get-exprs
+                                     [production]
+                                     (some-> production :handler resolve meta :clara.rules/exprs))) productions)
+        exprs (compile-exprs (extract-exprs beta-graph alpha-graph)
+                             (assoc options ::lhs-exprs lhs-exprs))
 
         ;; If we have made it to this point, it means that we have succeeded in compiling all expressions
         ;; thus we can free the :compile-ctx used for troubleshooting compilation failures.

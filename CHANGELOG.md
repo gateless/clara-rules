@@ -1,5 +1,13 @@
 This is a history of changes to gateless/clara-rules.
 
+# 1.8.0
+* `defrule` and `defquery` now compile their left-hand-side (LHS) expressions when the form is evaluated. An LHS that does not compile now fails at load time, not at `mk-session`.
+* The compiled LHS fns are stored in the `:clara.rules/exprs` metadata of the rule or query var. `mk-session` uses them in place of `eval`. A node that several rules share uses one fn.
+* A fn is matched by the condition data that its expression is built from. Rules built at runtime still use `eval`. A complex negation still uses `eval` for its generated condition.
+* A `defquery` with params that its LHS does not bind now fails at load time.
+* A `defquery` query map now has a `:handler` symbol that points to its var, as a rule map does.
+* Precompiled fns are now used when `:compiler-cache` is `false`. Before, the precompiled RHS handler was used only when the compiler cache was enabled.
+
 # 1.7.0
 * Add opt-in caching of rule right-hand-side (RHS) output across sessions. A rule opts in with a `:cache` prop; the caller passes a cache atom (any `clojure.core.cache/CacheProtocol`) as the `:activation-cache` option to `fire-rules`/`fire-rules-async`. On a cache hit the stored RHS output is replayed and the RHS is skipped; on a miss the RHS runs and its output is recorded. Firing without a cache is unchanged. Cache policy (TTL, eviction, hit/miss metrics) is the caller's responsibility.
 * Add a `:activation-cache-key-fn` option to `fire-rules`/`fire-rules-async` that overrides the default activation cache key (`clara.rules.activation-cache.core/build-cache-key`). It receives the activation map (`{:node :token}`) and returns the key, or nil to skip caching for that activation (the RHS runs uncached). Only consulted when `:activation-cache` is supplied and the rule opted in; choosing a sound key is the caller's responsibility.

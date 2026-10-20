@@ -298,13 +298,15 @@
                                                  (:rhs production)
                                                  &env)
         [rule-args & rule-body] (drop 2 rule-handler)
-        name-with-meta (vary-meta rule-name assoc :rule true :doc doc)
+        lhs-exprs (into {} (map (fn [[k form]] [(list 'quote k) form]))
+                        (com/build-lhs-exprs rule-action)) ;;; The compiled LHS
+        name-with-meta (vary-meta rule-name assoc :rule true :doc doc :clara.rules/exprs lhs-exprs)
         handler-name (symbol (name (ns-name *ns*)) (name rule-name))] ;;; The compiled RHS
     `(defn ~name-with-meta
        ([]
         (assoc ~rule :handler '~handler-name))
        ([~@(take 1 rule-args)]
-        (~rule-name '?__token__ {}))
+        (~rule-name ~'?__token__ {}))
        ([~@rule-args]
         ~@rule-body))))
 
@@ -318,10 +320,14 @@
     [?issue <- ValidationError])
 
   See the [query authoring documentation](http://www.clara-rules.org/docs/queries/) for details."
-  [name & body]
-  (let [doc (if (string? (first body)) (first body) nil)]
-    `(def ~(vary-meta name assoc :query true :doc doc)
-       ~(dsl/build-query name body &env (meta &form)))))
+  [query-name & body]
+  (let [doc (if (string? (first body)) (first body) nil)
+        query (dsl/build-query query-name body &env (meta &form))
+        lhs-exprs (into {} (map (fn [[k form]] [(list 'quote k) form]))
+                        (com/build-lhs-exprs (update query :lhs second)))
+        handler-name (symbol (name (ns-name *ns*)) (name query-name))]
+    `(def ~(vary-meta query-name assoc :query true :doc doc :clara.rules/exprs lhs-exprs)
+       ~(assoc query :handler `'~handler-name))))
 
 (defmacro defhierarchy
   "Defines a hierarchy and stores it in the given var. For instance, a simple hierarchy that adds

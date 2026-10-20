@@ -96,15 +96,15 @@
 
 (defquery temperature-below-value-using-symbol-arg
   [?value]
-  [:temperature [{value :value}] (< value ?value)])
+  [:temperature [{value :value}] (= ?value value)])
 
 (defquery temperature-below-value-using-keyword-arg
   [:?value]
-  [:temperature [{value :value}] (< value ?value)])
+  [:temperature [{value :value}] (= ?value value)])
 
 (deftest test-query-definition-bindings-args
   (testing "can define queries using symbol or keyword arguments"
-    (is (= (dissoc temperature-below-value-using-symbol-arg :name) (dissoc temperature-below-value-using-keyword-arg :name)))))
+    (is (= (dissoc temperature-below-value-using-symbol-arg :name :handler) (dissoc temperature-below-value-using-keyword-arg :name :handler)))))
 
 (deftest test-query-param-args
   (testing "noop query-params using keyword arguments"

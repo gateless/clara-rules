@@ -38,10 +38,10 @@
    rulebase is deserialized the nodes will reference this cache to repopulate their fns."
   nil)
 
-(defn- add-node-fn [node fn-key expr-key]
+(defn- add-node-fn [node fn-key expr-node-type]
   (assoc node
          fn-key
-         (first (get *node-fn-cache* [(:id node) expr-key]))))
+         (first (get *node-fn-cache* [(:id node) expr-node-type]))))
 
 (defn add-rhs-fn [node]
   (add-node-fn node :rhs :action-expr))
