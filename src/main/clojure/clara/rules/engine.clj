@@ -2128,7 +2128,7 @@
 
 (defn- query*
   [rulebase memory query params]
-  (let [query-node (get-in rulebase [:query-nodes query])]
+  (let [query-node (get-in rulebase [:query-nodes (or (:name query) query)])] ;;; lookup by name or value
     (when (= nil query-node)
       (platform/throw-error (str "The query " query " is invalid or not included in the rule base.")))
     (when-not (= (into #{} (keys params)) ;; nil params should be equivalent to #{}

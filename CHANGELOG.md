@@ -7,6 +7,7 @@ This is a history of changes to gateless/clara-rules.
 * Deserialization of a rulebase uses the precompiled LHS and RHS fns when the rule namespaces are on the classpath. It loads those namespaces when needed. Otherwise it uses `eval`, as before.
 * The serialized expression data now holds the `:handler` var symbol and the `:expr-key` of each precompiled expression. A rulebase serialized by an earlier version still deserializes with `eval`.
 * Fix deserialization with `:compiler-cache false` when an expression still needs `eval`. Before, a `:cache-key` stored in the serialized data made it throw a `ClassCastException`.
+* `query` looks up a query that has a name by that name. A query var now works with a rulebase serialized by an earlier version, where the query map can differ.
 * A `defquery` with params that its LHS does not bind now fails at load time.
 * A `defquery` query map now has a `:handler` symbol that points to its var, as a rule map does.
 * Precompiled fns are now used when `:compiler-cache` is `false`. Before, the precompiled RHS handler was used only when the compiler cache was enabled.

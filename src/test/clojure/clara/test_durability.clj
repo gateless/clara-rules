@@ -538,3 +538,12 @@
                  (insert (->Temperature 10 "MCI"))
                  (fire-rules)
                  (query cold-query)))))))
+
+(deftest test-query-by-name-after-deserialization
+  (testing "a named query is found by its name when its map differs from the one in the rulebase"
+    (let [restored (d/assemble-restored-session (rb-serde (mk-session 'clara.durability-rules) nil) {})
+          {:keys [fired-session]} (session-test restored)
+          expected (query fired-session dr/cold-temp)]
+      (is (seq expected))
+      (is (= expected (query fired-session (assoc dr/cold-temp :extra true))))
+      (is (= expected (query fired-session (dissoc dr/cold-temp :handler)))))))
