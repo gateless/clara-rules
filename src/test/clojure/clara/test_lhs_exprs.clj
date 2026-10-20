@@ -132,6 +132,12 @@
       (is (= [{:?t 1}] (query session cold-query)))
       (is (= [{:?t 2}] (query session temperature-query))))))
 
+(deftest test-expr-keys-hold-no-classes
+  (testing "a key holds class names, so it reads back from serialized data before the fact classes are loaded"
+    (is (not-any? class?
+                  (mapcat #(tree-seq coll? seq %)
+                          (keys (:clara.rules/exprs (meta #'cold-and-windy-rule))))))))
+
 (deftest test-fallback-to-eval
   (testing "a complex negation still compiles and fires"
     (is (= [{:?t 30}]

@@ -4,6 +4,9 @@ This is a history of changes to gateless/clara-rules.
 * `defrule` and `defquery` now compile their left-hand-side (LHS) expressions when the form is evaluated. An LHS that does not compile now fails at load time, not at `mk-session`.
 * The compiled LHS fns are stored in the `:clara.rules/exprs` metadata of the rule or query var. `mk-session` uses them in place of `eval`. A node that several rules share uses one fn.
 * A fn is matched by the condition data that its expression is built from. Rules built at runtime still use `eval`. A complex negation still uses `eval` for its generated condition.
+* Deserialization of a rulebase uses the precompiled LHS and RHS fns when the rule namespaces are on the classpath. It loads those namespaces when needed. Otherwise it uses `eval`, as before.
+* The serialized expression data now holds the `:handler` var symbol and the `:expr-key` of each precompiled expression. A rulebase serialized by an earlier version still deserializes with `eval`.
+* Fix deserialization with `:compiler-cache false` when an expression still needs `eval`. Before, a `:cache-key` stored in the serialized data made it throw a `ClassCastException`.
 * A `defquery` with params that its LHS does not bind now fails at load time.
 * A `defquery` query map now has a `:handler` symbol that points to its var, as a rule map does.
 * Precompiled fns are now used when `:compiler-cache` is `false`. Before, the precompiled RHS handler was used only when the compiler cache was enabled.
