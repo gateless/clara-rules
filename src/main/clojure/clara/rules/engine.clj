@@ -1017,6 +1017,14 @@
       (send-tokens transport memory listener (:children node)
                    [(->Token (conj (:matches token) [converted-result (:id node)]) new-bindings)]))))
 
+(defn- accum-condition-description
+  "Describes an accumulator condition for condition exceptions and tracing."
+  [result-binding accumulator condition]
+  ;; :exists, or an accumulator without <-, has no result binding.
+  (if result-binding
+    [(symbol (name result-binding)) '<- accumulator :from condition]
+    [accumulator :from condition]))
+
 ;; The AccumulateNode hosts Accumulators, a Rete extension described above, in the Rete network.
 ;; It behaves similarly to a JoinNode, but performs an accumulation function on the incoming
 ;; working-memory elements before sending a new token to its descendents.
@@ -1365,10 +1373,7 @@
     (let [{:keys [accumulator from]} accum-condition
           {:keys [type constraints]} from
           condition (into [type] constraints)]
-      ;; :exists, or an accumulator without <-, has no result binding.
-      (if result-binding
-        [(symbol (name result-binding)) '<- accumulator :from condition]
-        [accumulator :from condition])))
+      (accum-condition-description result-binding accumulator condition)))
 
   IAccumInspect
   (token->matching-elements [this memory token]
@@ -1715,10 +1720,7 @@
                              original-constraints
                              constraints)
           condition (into [type] full-constraints)]
-      ;; :exists, or an accumulator without <-, has no result binding.
-      (if result-binding
-        [(symbol (name result-binding)) '<- accumulator :from condition]
-        [accumulator :from condition])))
+      (accum-condition-description result-binding accumulator condition)))
 
   ;; The explanation of the implementation of token->matching-elements on AccumulateNode applies here as well.
   ;; Note that since we store all facts propagated from the alpha network to this condition in the accum memory,

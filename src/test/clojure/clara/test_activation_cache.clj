@@ -368,8 +368,9 @@
 (def exists-runs (atom 0))
 
 (defrule exists-rule
-  "An :exists condition compiles to an accumulator with a generated result
-  binding. That binding is part of the activation cache key."
+  "An :exists condition must not add a binding that changes between compiles.
+  It adds no binding today. Token bindings are part of the activation cache
+  key, so the test fails if a future change adds an unstable one."
   {:cache true}
   [:exists [Temperature (< temperature 20)]]
   =>
@@ -404,7 +405,7 @@
                                                        [(->Temperature 10 "MCI")]
                                                        ca)]
     (is (= 1 @exists-runs)
-        "the second compile has the same :exists binding name, so the activation hits")
+        "the second compile has the same token bindings, so the activation hits")
     (is (= after-s1 after-s2) "the second session adds no cache entries")))
 
 (deftest test-complex-negation-rule-name-stable-across-compiles

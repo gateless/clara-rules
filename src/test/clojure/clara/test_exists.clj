@@ -13,10 +13,12 @@
                                            ->ColdAndWindy]]
             [clojure.test :refer [is deftest run-tests testing use-fixtures]]
             [clara.rules.dsl :as dsl]
+            [clara.rules.engine :as eng]
             [clara.rules.accumulators]
             [clara.tools.tracing :as t]
             [schema.test :as st])
-  (:import [clara.rules.testfacts
+  (:import [clara.rules.engine AccumulateNode AccumulateWithJoinFilterNode]
+           [clara.rules.testfacts
             Temperature
             Cold
             WindSpeed
@@ -198,4 +200,9 @@
                     t/with-tracing
                     (insert (->Temperature 10 "MCI"))
                     (fire-rules))]
-    (is (map? (t/ranked-productions session)))))
+    (is (map? (t/ranked-productions session)))
+    (let [accum-nodes (->> session eng/components :rulebase :id-to-node vals
+                           (filter #(or (instance? AccumulateNode %)
+                                        (instance? AccumulateWithJoinFilterNode %))))]
+      (is (= #{AccumulateNode AccumulateWithJoinFilterNode} (set (map type accum-nodes)))
+          "both accumulate node types are present"))))
