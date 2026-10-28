@@ -1,6 +1,7 @@
 (ns clara.test-exists
   (:require [clara.tools.testing-utils :refer [def-rules-test] :as tu]
             [clara.rules :refer [fire-rules
+                                 mk-session
                                  insert
                                  insert-all
                                  insert-unconditional!
@@ -11,9 +12,13 @@
             [clara.rules.testfacts :refer [->Temperature ->Cold ->WindSpeed
                                            ->ColdAndWindy]]
             [clojure.test :refer [is deftest run-tests testing use-fixtures]]
+            [clara.rules.dsl :as dsl]
+            [clara.rules.engine :as eng]
             [clara.rules.accumulators]
+            [clara.tools.tracing :as t]
             [schema.test :as st])
-  (:import [clara.rules.testfacts
+  (:import [clara.rules.engine AccumulateNode AccumulateWithJoinFilterNode]
+           [clara.rules.testfacts
             Temperature
             Cold
             WindSpeed
@@ -167,3 +172,37 @@
              (insert (->Temperature -10 "INV"))
              fire-rules
              (query cold-query)))))
+
+;; An :exists accumulator has no result binding. Condition descriptions must
+;; still work for it, because condition exceptions and tracing build them.
+(deftest test-condition-exception-inside-exists
+  (let [rule (dsl/parse-rule [[:exists [Temperature (= 1 (/ 1 (- temperature 10)))]]]
+                             (insert! (->Cold 0)))
+        e (try
+            (-> (mk-session [rule] :cache false)
+                (insert (->Temperature 10 "MCI"))
+                (fire-rules))
+            nil
+            (catch Exception e e))]
+    (is (instance? clojure.lang.ExceptionInfo e))
+    (is (.startsWith (str (ex-message e)) "Condition exception raised."))
+    (is (instance? ArithmeticException (ex-cause e))
+        "the original error is the cause")))
+
+(deftest test-ranked-productions-with-exists
+  (let [plain (dsl/parse-rule [[:exists [Temperature (< temperature 20)]]]
+                              (insert! (->Cold 0)))
+        ;; The non-equality join gives an accumulate node with a join filter.
+        join-filter (dsl/parse-rule [[Temperature (= ?t temperature)]
+                                     [:exists [Cold (< temperature ?t)]]]
+                                    (insert! (->Cold -1)))
+        session (-> (mk-session [plain join-filter] :cache false)
+                    t/with-tracing
+                    (insert (->Temperature 10 "MCI"))
+                    (fire-rules))]
+    (is (map? (t/ranked-productions session)))
+    (let [accum-nodes (->> session eng/components :rulebase :id-to-node vals
+                           (filter #(or (instance? AccumulateNode %)
+                                        (instance? AccumulateWithJoinFilterNode %))))]
+      (is (= #{AccumulateNode AccumulateWithJoinFilterNode} (set (map type accum-nodes)))
+          "both accumulate node types are present"))))

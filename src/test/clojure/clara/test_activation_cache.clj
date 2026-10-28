@@ -10,6 +10,7 @@
                                  fire-rules fire-rules-async query insert!
                                  insert-unconditional! retract retract!]]
             [clara.rules.activation-cache.core :as ac]
+            [clara.rules.accumulators]
             [clara.tools.tracing :as t]
             [clojure.core.cache.wrapped :as cache]
             [clojure.data.fressian :as fres]
@@ -359,3 +360,100 @@
             [hit-event] (fire-activation-events (run))]
         (is (not (contains? (:activation miss-event) :cache)) "a miss (live RHS) activation has no :cache flag")
         (is (true? (:cache (:activation hit-event))) "a hit activation is marked :cache true")))))
+
+;; ---------------------------------------------------------------------------
+;; Stable generated names across compiles
+;; ---------------------------------------------------------------------------
+
+(def exists-runs (atom 0))
+
+(defrule exists-rule
+  "An :exists condition must not add a binding that changes between compiles.
+  It adds no binding today. Token bindings are part of the activation cache
+  key, so the test fails if a future change adds an unstable one."
+  {:cache true}
+  [:exists [Temperature (< temperature 20)]]
+  =>
+  (swap! exists-runs inc))
+
+(defrule complex-negation-rule
+  "A complex negation compiles to a generated rule that copies these props, so
+  the generated rule is cached too. Its name is part of its cache key."
+  {:cache true}
+  [Temperature (= ?t temperature)]
+  [:not [:or [Hot (= ?t temperature)] [Cold (= ?t temperature)]]]
+  =>
+  (insert! (->Hot 0)))
+
+(defn- fire-in-separate-sessions
+  "Fires the facts in two separately compiled sessions that share the given
+  activation cache. Returns the cache entry count after each session."
+  [productions facts ca]
+  (let [run (fn []
+              (-> (mk-session productions
+                              :cache false
+                              :compiler-cache (cache/basic-cache-factory {}))
+                  (insert-all facts)
+                  (fire-rules {:activation-cache ca}))
+              (count @ca))]
+    [(run) (run)]))
+
+(deftest test-exists-binding-stable-across-compiles
+  (reset! exists-runs 0)
+  (let [ca (fresh-cache)
+        [after-s1 after-s2] (fire-in-separate-sessions [exists-rule]
+                                                       [(->Temperature 10 "MCI")]
+                                                       ca)]
+    (is (= 1 @exists-runs)
+        "the second compile has the same token bindings, so the activation hits")
+    (is (= after-s1 after-s2) "the second session adds no cache entries")))
+
+(deftest test-complex-negation-rule-name-stable-across-compiles
+  (let [ca (fresh-cache)
+        [after-s1 after-s2] (fire-in-separate-sessions [complex-negation-rule]
+                                                       [(->Temperature 10 "MCI")
+                                                        (->Hot 10)
+                                                        (->Cold 10)]
+                                                       ca)]
+    (is (pos? after-s1) "the generated negation rule fires and is cached")
+    (is (= after-s1 after-s2)
+        "the second compile has the same generated rule name, so its activations hit")))
+
+(def nested-negation-runs (atom 0))
+
+(defrule nested-negation-rule
+  "The inner negation sits in an :and, so the generated negation rule has a
+  complex negation of its own. That gives a nested generated rule."
+  {:cache true}
+  [Temperature (= ?t temperature)]
+  [:not [:and
+         [Hot (= ?t temperature)]
+         [:not [:or [Cold (= ?t temperature)] [Temperature (> temperature 100)]]]]]
+  =>
+  (swap! nested-negation-runs inc))
+
+(deftest test-nested-negation-rule-names-stable-across-compiles
+  ;; A generated rule is cached only when it fires. The nested rule fires for
+  ;; ?t 10 (Hot and Cold), which blocks its parent for 10. Its parent fires for
+  ;; ?t 20 (Hot, no Cold).
+  (reset! nested-negation-runs 0)
+  (let [ca (fresh-cache)
+        [after-s1 after-s2] (fire-in-separate-sessions [nested-negation-rule]
+                                                       [(->Temperature 10 "MCI")
+                                                        (->Hot 10)
+                                                        (->Cold 10)
+                                                        (->Temperature 20 "MCI")
+                                                        (->Hot 20)]
+                                                       ca)
+        names (set (map :name (keys @ca)))
+        rule-name "clara.test-activation-cache/nested-negation-rule"
+        generated? (fn [suffix-re]
+                     (some #(re-matches (re-pattern (str "\\Q" rule-name "\\E" suffix-re)) %)
+                           names))]
+    (is (generated? "__gen__COMPLEX_NEGATION_\\d+")
+        "the first generated negation rule has the marker and one index")
+    (is (generated? "__gen__COMPLEX_NEGATION_\\d+_\\d+")
+        "the nested generated negation rule appends one more index")
+    (is (= 1 @nested-negation-runs) "the rule fires for ?t 10 once and hits in session 2")
+    (is (= after-s1 after-s2)
+        "the second compile has the same generated rule names, so all activations hit")))
