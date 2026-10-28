@@ -994,7 +994,7 @@
                                  (get-in production [:props :clara-rules/internal-salience]))
                             (str production-name "_" condition-index)
                             (str production-name "__gen__COMPLEX_NEGATION_" condition-index))
-                          (str (gensym "gen-rule") "__" (gensym)))
+                          (str (gensym "gen-rule__COMPLEX_NEGATION") "__" (gensym)))
 
           ;; Insert the bindings from ancestors that are used in the negation
           ;; in the NegationResult fact so that the [:not [NegationResult...]]
