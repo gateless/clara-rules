@@ -1,8 +1,10 @@
 This is a history of changes to gateless/clara-rules.
 
 # 1.7.1
-* Generated names are now stable between compiles. An `:exists` condition binds `?__gen__<condition>_<position>` instead of a gensym. A complex negation in a named rule generates a rule named `<rule>__gen__COMPLEX_NEGATION_<condition>`. A nested complex negation appends `_<condition>` to that name. Activation cache keys hold these names, so separately compiled sessions now hit the cache for such rules.
+* An `:exists` condition no longer adds a generated `?__gen__` binding to the token. Activation cache keys hold the token bindings, so separately compiled sessions now hit the cache for such rules.
+* Generated complex negation rule names are now stable between compiles. A complex negation in a named rule generates a rule named `<rule>__gen__COMPLEX_NEGATION_<condition>`. A nested complex negation appends `_<condition>` to that name.
 * Rules with the same `:exists` condition on the same parent nodes now share the accumulator node.
+* Condition exception messages and `clara.tools.tracing/ranked-productions` now support accumulators without a result binding. This includes `:exists` and accumulators written without `<-`. Previously they threw a `NullPointerException`.
 
 # 1.7.0
 * Add opt-in caching of rule right-hand-side (RHS) output across sessions. A rule opts in with a `:cache` prop; the caller passes a cache atom (any `clojure.core.cache/CacheProtocol`) as the `:activation-cache` option to `fire-rules`/`fire-rules-async`. On a cache hit the stored RHS output is replayed and the RHS is skipped; on a miss the RHS runs and its output is recorded. Firing without a cache is unchanged. Cache policy (TTL, eviction, hit/miss metrics) is the caller's responsibility.

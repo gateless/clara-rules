@@ -628,7 +628,6 @@
   (let [is-negation (= :not (first condition))
         is-exists (= :exists (first condition))
         accumulator (:accumulator condition)
-        result-binding (:result-binding condition) ; Get the optional result binding used by accumulators.
         condition (cond
                     is-negation (second condition)
                     accumulator (:from condition)
@@ -649,25 +648,16 @@
 
    It may be possible to replace this conversion with a specialized
    ExtractNode in the future, but this transformation is simple
-   and meets the functional needs.
+   and meets the functional needs."
+  [conditions]
+  (for [condition conditions]
+    (if (= :exists (condition-type condition))
+      ;; This is an :exists condition, so expand it into an accumulator
+      {:accumulator '(clara.rules.accumulators/exists)
+       :from (second condition)}
 
-   The result binding name comes from the condition-index of the
-   top-level condition and the position in the conditions. The name
-   must not change between compiles, because the activation cache
-   key holds the bindings."
-  [condition-index conditions]
-  (map-indexed (fn as-exists
-                 [i condition]
-                 (if (= :exists (condition-type condition))
-                   ;; This is an :exists condition, so expand it
-                   ;; into an accumulator and a test.
-                   {:accumulator '(clara.rules.accumulators/exists)
-                    :from (second condition)
-                    :result-binding (keyword (str "?__gen__" condition-index "_" i))}
-
-                   ;; This is not an :exists condition, so do not change it.
-                   condition))
-               conditions))
+      ;; This is not an :exists condition, so do not change it.
+      condition)))
 
 (defn- classify-variables
   "Classifies the variables found in the given contraints into 'bound' vs 'free'
@@ -1231,7 +1221,7 @@
                     (reduce (fn [previous-result conjunctions]
                               ;; Get the  complete bindings
                               (let [;; Convert exists operations to accumulator and test nodes.
-                                    exists-extracted (extract-exists (count previous-conditions) conjunctions)
+                                    exists-extracted (extract-exists conjunctions)
                                     ;; Compute the new bindings with the expressions.
                                     new-result (get-condition-bindings exists-extracted
                                                                        (:env production)
@@ -1308,7 +1298,7 @@
 
                         ;; Get the beta graph, new identifiers, and complete bindings
                         (let [;; Convert exists operations to accumulator and test nodes.
-                              exists-extracted (extract-exists (count previous-conditions) conjunctions)
+                              exists-extracted (extract-exists conjunctions)
 
                               ;; Compute the new beta graph, ids, and bindings with the expressions.
                               new-result (add-conjunctions exists-extracted

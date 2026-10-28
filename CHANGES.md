@@ -73,11 +73,11 @@ since it diverged from upstream cerner/clara-rules, as of 2026-05-01.
   replays the stored RHS output and skips the RHS. `:activation-cache-key-fn`
   overrides the key. `:default-rule-props` on `mk-session` sets props for all
   rules.
-- **Stable generated names (1.7.1)**: `:exists` bindings are
-  `?__gen__<condition>_<position>`. Generated complex negation rules are
-  `<rule>__gen__COMPLEX_NEGATION_<condition>`, with `_<condition>` appended for
-  each nested level. Activation cache keys therefore match across separately
-  compiled sessions.
+- **Stable activation cache keys (1.7.1)**: `:exists` no longer adds a
+  generated `?__gen__` binding to the token. Generated complex negation rules
+  are `<rule>__gen__COMPLEX_NEGATION_<condition>`, with `_<condition>` appended
+  for each nested level. Activation cache keys therefore match across
+  separately compiled sessions.
 
 ## 4. ham-fisted-based performance rewrite
 - `ham-fisted` introduced as a core dep (currently 3.006). Used pervasively in:

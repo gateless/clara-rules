@@ -1364,9 +1364,11 @@
   (get-condition-description [this]
     (let [{:keys [accumulator from]} accum-condition
           {:keys [type constraints]} from
-          condition (into [type] constraints)
-          result-symbol (symbol (name result-binding))]
-      [result-symbol '<- accumulator :from condition]))
+          condition (into [type] constraints)]
+      ;; :exists, or an accumulator without <-, has no result binding.
+      (if result-binding
+        [(symbol (name result-binding)) '<- accumulator :from condition]
+        [accumulator :from condition])))
 
   IAccumInspect
   (token->matching-elements [this memory token]
@@ -1709,12 +1711,14 @@
   (get-condition-description [this]
     (let [{:keys [accumulator from]} accum-condition
           {:keys [type constraints original-constraints]} from
-          result-symbol (symbol (name result-binding))
           full-constraints (if (seq original-constraints)
                              original-constraints
                              constraints)
           condition (into [type] full-constraints)]
-      [result-symbol '<- accumulator :from condition]))
+      ;; :exists, or an accumulator without <-, has no result binding.
+      (if result-binding
+        [(symbol (name result-binding)) '<- accumulator :from condition]
+        [accumulator :from condition])))
 
   ;; The explanation of the implementation of token->matching-elements on AccumulateNode applies here as well.
   ;; Note that since we store all facts propagated from the alpha network to this condition in the accum memory,
