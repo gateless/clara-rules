@@ -12,7 +12,8 @@ since it diverged from upstream cerner/clara-rules, as of 2026-05-01.
 - **Read-only and query-only sessions.** New session types and durability options
   for fast deserialization when only queries or inspection are needed.
 - **Pluggable caching.** Session and expression compilation are both backed by
-  `core.cache` `CacheProtocol` instances and can be swapped or cleared.
+  `core.cache` `CacheProtocol` instances and can be swapped or cleared. An
+  opt-in `:activation-cache` replays rule RHS output across sessions.
 - **`ham-fisted` performance rewrite.** Working memory, beta graph, update caches,
   and Fressian durability use ham-fisted mutable collections.
 - **DSL additions.** `defhierarchy` macro, namespace-level rule properties,
@@ -67,6 +68,16 @@ since it diverged from upstream cerner/clara-rules, as of 2026-05-01.
   compilation; default is a soft-reference cache.
 - Public helpers `clear-session-cache!` and `clear-compiler-cache!`.
 - New `:hash-expr-fn` option for deterministic, MD5-based cache keying.
+- **Activation cache (1.7.0)**: a rule opts in with the `:cache` prop. The
+  caller passes `:activation-cache` to `fire-rules`/`fire-rules-async`. A hit
+  replays the stored RHS output and skips the RHS. `:activation-cache-key-fn`
+  overrides the key. `:default-rule-props` on `mk-session` sets props for all
+  rules.
+- **Stable generated names (1.7.1)**: `:exists` bindings are
+  `?__gen__<condition>_<position>`. Generated complex negation rules are
+  `<rule>__gen__COMPLEX_NEGATION_<condition>`, with `_<condition>` appended for
+  each nested level. Activation cache keys therefore match across separately
+  compiled sessions.
 
 ## 4. ham-fisted-based performance rewrite
 - `ham-fisted` introduced as a core dep (currently 3.006). Used pervasively in:
