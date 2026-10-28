@@ -649,21 +649,25 @@
 
    It may be possible to replace this conversion with a specialized
    ExtractNode in the future, but this transformation is simple
-   and meets the functional needs."
-  [conditions]
-  (for [condition conditions
-        expanded (if (= :exists (condition-type condition))
+   and meets the functional needs.
+
+   The result binding name comes from the condition-index of the
+   top-level condition and the position in the conditions. The name
+   must not change between compiles, because the activation cache
+   key holds the bindings."
+  [condition-index conditions]
+  (map-indexed (fn as-exists
+                 [i condition]
+                 (if (= :exists (condition-type condition))
                    ;; This is an :exists condition, so expand it
                    ;; into an accumulator and a test.
-                   (let [exists-count (gensym "?__gen__")]
-                     [{:accumulator '(clara.rules.accumulators/exists)
-                       :from (second condition)
-                       :result-binding (keyword exists-count)}])
+                   {:accumulator '(clara.rules.accumulators/exists)
+                    :from (second condition)
+                    :result-binding (keyword (str "?__gen__" condition-index "_" i))}
 
                    ;; This is not an :exists condition, so do not change it.
-                   [condition])]
-
-    expanded))
+                   condition))
+               conditions))
 
 (defn- classify-variables
   "Classifies the variables found in the given contraints into 'bound' vs 'free'
@@ -992,10 +996,15 @@
 
     ;; Dealing with a compound negation, so extract it out.
     (let [negation-expr (second expression)
-          gen-rule-name (str (or (:name production)
-                                 (gensym "gen-rule"))
-                             "__"
-                             (gensym))
+          condition-index (count previous-expressions)
+          ;;; generated rule names are deterministic based on the production name and negation index
+          ;;; or for productions without names, a generated name is used so it remains unique.
+          gen-rule-name (if-let [production-name (:name production)]
+                          (if (= :extracted-negation
+                                 (get-in production [:props :clara-rules/internal-salience]))
+                            (str production-name "_" condition-index)
+                            (str production-name "__gen__COMPLEX_NEGATION_" condition-index))
+                          (str (gensym "gen-rule") "__" (gensym)))
 
           ;; Insert the bindings from ancestors that are used in the negation
           ;; in the NegationResult fact so that the [:not [NegationResult...]]
@@ -1222,7 +1231,7 @@
                     (reduce (fn [previous-result conjunctions]
                               ;; Get the  complete bindings
                               (let [;; Convert exists operations to accumulator and test nodes.
-                                    exists-extracted (extract-exists conjunctions)
+                                    exists-extracted (extract-exists (count previous-conditions) conjunctions)
                                     ;; Compute the new bindings with the expressions.
                                     new-result (get-condition-bindings exists-extracted
                                                                        (:env production)
@@ -1299,7 +1308,7 @@
 
                         ;; Get the beta graph, new identifiers, and complete bindings
                         (let [;; Convert exists operations to accumulator and test nodes.
-                              exists-extracted (extract-exists conjunctions)
+                              exists-extracted (extract-exists (count previous-conditions) conjunctions)
 
                               ;; Compute the new beta graph, ids, and bindings with the expressions.
                               new-result (add-conjunctions exists-extracted
